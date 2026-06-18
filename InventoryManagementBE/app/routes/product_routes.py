@@ -1,12 +1,11 @@
+# app/routes/product_bp.py - Updated with gold/silver fields
 from flask import Blueprint, request, jsonify
 from app.models.product import Product
 from app import db
 from flask_cors import CORS
 
-
 product_bp = Blueprint("product_bp", __name__)
 CORS(product_bp)
-
 
 # Validation function
 def validate_product_data(data):
@@ -45,31 +44,31 @@ def create_product():
     try:
         data = request.get_json()
         
-        # Validate input
         errors = validate_product_data(data)
         if errors:
             return jsonify({"errors": errors}), 400
 
-        # Handle watts properly
         watts = None
         if data.get('watts'):
             try:
                 watts = float(data['watts'])
             except (TypeError, ValueError):
-                watts = data['watts']  # Keep as string if not float
+                watts = data['watts']
 
         product = Product(
             name=data.get("name", "").strip(),
             model=data.get("model", "").strip(),
             type=data.get("type", "").strip(),
             watts=watts,
+            # NEW: Gold/Silver fields
+            item_type=data.get("itemType", "gold"),
+            purity=data.get("purity", ""),
             buy_price=float(data.get("buyPrice", 0)),
             sell_price=float(data.get("sellPrice", 0)),
-            quantity=int(data.get("quantity", 0)),  # Changed to int
+            quantity=int(data.get("quantity", 0)),
         )
 
         product.calculate_values()
-
         db.session.add(product)
         db.session.commit()
 
@@ -84,12 +83,12 @@ def create_product():
 @product_bp.route("/products", methods=["GET"])
 def get_products():
     try:
-        # Add pagination
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
         
-        # Add filtering
         product_type = request.args.get('type')
+        # NEW: Filter by item type (gold/silver)
+        item_type = request.args.get('item_type')
         min_price = request.args.get('min_price', type=float)
         max_price = request.args.get('max_price', type=float)
         
@@ -97,12 +96,14 @@ def get_products():
         
         if product_type:
             query = query.filter_by(type=product_type)
+        # NEW: Filter by item type
+        if item_type:
+            query = query.filter_by(item_type=item_type)
         if min_price is not None:
             query = query.filter(Product.sell_price >= min_price)
         if max_price is not None:
             query = query.filter(Product.sell_price <= max_price)
         
-        # Paginate results
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         
         return jsonify({
@@ -134,13 +135,11 @@ def update_product(id):
         product = Product.query.get_or_404(id)
         data = request.get_json()
         
-        # Validate input for updated fields
         if data.get('buyPrice') or data.get('sellPrice') or data.get('quantity'):
             errors = validate_product_data(data)
             if errors:
                 return jsonify({"errors": errors}), 400
 
-        # Update only provided fields
         if data.get('name') is not None:
             product.name = data['name'].strip()
         if data.get('model') is not None:
@@ -152,6 +151,11 @@ def update_product(id):
                 product.watts = float(data['watts'])
             except (TypeError, ValueError):
                 product.watts = data['watts']
+        # NEW: Gold/Silver fields
+        if data.get('itemType') is not None:
+            product.item_type = data['itemType']
+        if data.get('purity') is not None:
+            product.purity = data['purity']
         if data.get('buyPrice') is not None:
             product.buy_price = float(data['buyPrice'])
         if data.get('sellPrice') is not None:
@@ -160,7 +164,6 @@ def update_product(id):
             product.quantity = int(data['quantity'])
 
         product.calculate_values()
-
         db.session.commit()
 
         return jsonify(product.to_dict()), 200
@@ -175,7 +178,6 @@ def update_product(id):
 def delete_product(id):
     try:
         product = Product.query.get_or_404(id)
-
         db.session.delete(product)
         db.session.commit()
 
@@ -201,7 +203,6 @@ def bulk_create_products():
         
         for idx, product_data in enumerate(products):
             try:
-                # Validate each product
                 validation_errors = validate_product_data(product_data)
                 if validation_errors:
                     errors.append({
@@ -211,12 +212,14 @@ def bulk_create_products():
                     })
                     continue
                 
-                # Create product
                 product = Product(
                     name=product_data.get("name", "").strip(),
                     model=product_data.get("model", "").strip(),
                     type=product_data.get("type", "").strip(),
                     watts=product_data.get("watts"),
+                    # NEW: Gold/Silver fields
+                    item_type=product_data.get("itemType", "gold"),
+                    purity=product_data.get("purity", ""),
                     buy_price=float(product_data.get("buyPrice", 0)),
                     sell_price=float(product_data.get("sellPrice", 0)),
                     quantity=int(product_data.get("quantity", 0)),
@@ -262,11 +265,17 @@ def get_product_statistics():
             func.sum(Product.amount).label('total_value')
         ).first()
         
-        # Get counts by type
         type_counts = db.session.query(
             Product.type,
             func.count(Product.id).label('count')
         ).group_by(Product.type).all()
+        
+        # NEW: Get counts by item type (gold/silver)
+        item_type_counts = db.session.query(
+            Product.item_type,
+            func.count(Product.id).label('count'),
+            func.sum(Product.quantity).label('total_quantity')
+        ).group_by(Product.item_type).all()
         
         return jsonify({
             'total_products': stats.total_products or 0,
@@ -274,7 +283,13 @@ def get_product_statistics():
             'average_sell_price': round(stats.avg_sell_price or 0, 2),
             'average_buy_price': round(stats.avg_buy_price or 0, 2),
             'total_inventory_value': round(stats.total_value or 0, 2),
-            'products_by_type': [{'type': t[0] or 'Uncategorized', 'count': t[1]} for t in type_counts]
+            'products_by_type': [{'type': t[0] or 'Uncategorized', 'count': t[1]} for t in type_counts],
+            # NEW: Gold/Silver statistics
+            'products_by_item_type': [{
+                'itemType': t[0] or 'other', 
+                'count': t[1],
+                'totalQuantity': t[2] or 0
+            } for t in item_type_counts]
         }), 200
         
     except Exception as e:

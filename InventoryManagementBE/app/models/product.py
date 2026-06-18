@@ -1,3 +1,4 @@
+# app/models/product.py - Updated with gold/silver fields
 from app import db
 from datetime import datetime
 
@@ -10,6 +11,10 @@ class Product(db.Model):
     model = db.Column(db.String(100))
     type = db.Column(db.String(100))
     watts = db.Column(db.Float)
+    
+    # NEW: Gold/Silver specific fields
+    item_type = db.Column(db.String(50), default='gold')  # gold, silver, other
+    purity = db.Column(db.String(50))  # 22K, 24K, 925, etc.
 
     buy_price = db.Column(db.Float, nullable=False)
     sell_price = db.Column(db.Float, nullable=False)
@@ -37,6 +42,9 @@ class Product(db.Model):
             "model": self.model,
             "type": self.type,
             "watts": self.watts,
+            # NEW: Gold/Silver fields
+            "itemType": self.item_type,
+            "purity": self.purity,
             "buyPrice": self.buy_price,
             "sellPrice": self.sell_price,
             "quantity": self.quantity,
