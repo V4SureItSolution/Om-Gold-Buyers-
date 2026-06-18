@@ -1,4 +1,4 @@
-// ItemsPage.jsx
+// ItemsPage.jsx - Updated with gold/silver fields
 import React, { useEffect, useState, useRef } from "react";
 import { 
   Plus, Download, Upload, Trash2, Save, Search, RefreshCw, 
@@ -230,6 +230,9 @@ export default function ItemsPage() {
                 model: existingItem.model || "",
                 type: existingItem.type || "",
                 watts: existingItem.watts || "",
+                // New fields for gold/silver
+                itemType: existingItem.itemType || "",
+                purity: existingItem.purity || "",
                 buyPrice: existingItem.buyPrice || 0,
                 sellPrice: existingItem.sellPrice || 0,
                 quantity: newQty,
@@ -249,6 +252,9 @@ export default function ItemsPage() {
               model: supplyItem.model || "",
               type: supplyItem.type || "",
               watts: supplyItem.watts || "",
+              // New fields for gold/silver
+              itemType: supplyItem.itemType || "gold",
+              purity: supplyItem.purity || "",
               buyPrice: parseFloat(supplyItem.buy_price || supplyItem.buyPrice || 0),
               sellPrice: parseFloat(supplyItem.sell_price || supplyItem.sellPrice || 0),
               quantity: supplyQty,
@@ -500,6 +506,9 @@ export default function ItemsPage() {
         model: editingItem.model?.trim() || "",
         type: editingItem.type?.trim() || "",
         watts: editingItem.watts?.toString() || "", // Keep as watts in API
+        // New fields for gold/silver
+        itemType: editingItem.itemType || "gold",
+        purity: editingItem.purity || "",
         buyPrice: parseFloat(editingItem.buyPrice) || 0,
         sellPrice: parseFloat(editingItem.sellPrice) || 0,
         quantity: parseInt(editingItem.quantity) || 0,
@@ -557,6 +566,9 @@ export default function ItemsPage() {
       model: "",
       type: "",
       watts: "", // This will be displayed as Warranty
+      // New fields for gold/silver
+      itemType: "gold",
+      purity: "",
       buyPrice: "",
       sellPrice: "",
       quantity: "",
@@ -618,7 +630,10 @@ export default function ItemsPage() {
         'Name': item.name || '',
         'Model': item.model || '',
         'Type': item.type || '',
-        'Warranty': item.watts || '', // Changed from 'Watts' to 'Warranty'
+        'Warranty': item.watts || '',
+        // New fields for gold/silver
+        'Item Type': item.itemType || 'gold',
+        'Purity': item.purity || '',
         'Buy Price': item.buyPrice || 0,
         'Sell Price': item.sellPrice || 0,
         'Quantity': item.quantity || 0,
@@ -634,7 +649,9 @@ export default function ItemsPage() {
         { wch: 20 }, // Name
         { wch: 15 }, // Model
         { wch: 15 }, // Type
-        { wch: 12 }, // Warranty (was Watts)
+        { wch: 12 }, // Warranty
+        { wch: 12 }, // Item Type
+        { wch: 10 }, // Purity
         { wch: 12 }, // Buy Price
         { wch: 12 }, // Sell Price
         { wch: 10 }, // Quantity
@@ -689,6 +706,9 @@ export default function ItemsPage() {
           const model = row['Model'] || row['model'] || '';
           const type = row['Type'] || row['type'] || '';
           const warranty = row['Warranty'] || row['watts'] || row['Warranty'] || row['Warranty Period'] || '';
+          // New fields
+          const itemType = row['Item Type'] || row['itemType'] || row['ItemType'] || 'gold';
+          const purity = row['Purity'] || row['purity'] || '';
           const buyPrice = parseFloat(row['Buy Price'] || row['buyPrice'] || row['Buy Price'] || row['BuyPrice'] || 0);
           const sellPrice = parseFloat(row['Sell Price'] || row['sellPrice'] || row['Sell Price'] || row['SellPrice'] || 0);
           const quantity = parseInt(row['Quantity'] || row['quantity'] || row['Qty'] || 0);
@@ -699,6 +719,8 @@ export default function ItemsPage() {
             model,
             type,
             watts: warranty,
+            itemType: itemType,
+            purity: purity,
             buyPrice,
             sellPrice,
             quantity,
@@ -778,6 +800,8 @@ export default function ItemsPage() {
                   model: existingItem.model || "",
                   type: existingItem.type || "",
                   watts: existingItem.watts || "",
+                  itemType: importItem.itemType || existingItem.itemType || "gold",
+                  purity: importItem.purity || existingItem.purity || "",
                   buyPrice: existingItem.buyPrice || 0,
                   sellPrice: existingItem.sellPrice || 0,
                   quantity: newQty,
@@ -796,6 +820,8 @@ export default function ItemsPage() {
                 model: importItem.model || "",
                 type: importItem.type || "",
                 watts: importItem.watts || "",
+                itemType: importItem.itemType || "gold",
+                purity: importItem.purity || "",
                 buyPrice: parseFloat(importItem.buyPrice) || 0,
                 sellPrice: importSellPrice,
                 quantity: parseInt(importItem.quantity) || 0,
@@ -820,6 +846,8 @@ export default function ItemsPage() {
               model: importItem.model || "",
               type: importItem.type || "",
               watts: importItem.watts || "",
+              itemType: importItem.itemType || "gold",
+              purity: importItem.purity || "",
               buyPrice: parseFloat(importItem.buyPrice) || 0,
               sellPrice: parseFloat(importItem.sellPrice) || 0,
               quantity: parseInt(importItem.quantity) || 0,
@@ -894,6 +922,7 @@ export default function ItemsPage() {
           item.name?.toLowerCase().includes(search.toLowerCase()) ||
           item.model?.toLowerCase().includes(search.toLowerCase()) ||
           item.type?.toLowerCase().includes(search.toLowerCase()) ||
+          item.itemType?.toLowerCase().includes(search.toLowerCase()) ||
           String(item.id).includes(search)
       );
     }
@@ -929,6 +958,7 @@ export default function ItemsPage() {
       item.name?.toLowerCase().includes(search.toLowerCase()) ||
       item.model?.toLowerCase().includes(search.toLowerCase()) ||
       item.type?.toLowerCase().includes(search.toLowerCase()) ||
+      item.itemType?.toLowerCase().includes(search.toLowerCase()) ||
       String(item.id).toLowerCase().includes(search.toLowerCase())
   );
 
@@ -1386,6 +1416,31 @@ export default function ItemsPage() {
               />
             </div>
 
+            {/* NEW: Item Type for Gold/Silver */}
+            <div style={modalStyles.formGroup}>
+              <label style={modalStyles.label}>Item Type</label>
+              <select
+                style={modalStyles.input}
+                value={editingItem.itemType || "gold"}
+                onChange={(e) => handleEditChange("itemType", e.target.value)}
+              >
+                <option value="gold">🥇 Gold</option>
+                <option value="silver">🥈 Silver</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            {/* NEW: Purity */}
+            <div style={modalStyles.formGroup}>
+              <label style={modalStyles.label}>Purity (e.g., 22K, 24K, 925)</label>
+              <input
+                style={modalStyles.input}
+                value={editingItem.purity || ""}
+                onChange={(e) => handleEditChange("purity", e.target.value)}
+                placeholder="Enter purity (e.g., 22K, 24K, 925)"
+              />
+            </div>
+
             <div style={modalStyles.formGroup}>
               <label style={modalStyles.label}>Buy Price (₹)</label>
               <input
@@ -1512,6 +1567,8 @@ export default function ItemsPage() {
                         <th style={modalStyles.importTh}>Model</th>
                         <th style={modalStyles.importTh}>Type</th>
                         <th style={modalStyles.importTh}>Warranty</th>
+                        <th style={modalStyles.importTh}>Item Type</th>
+                        <th style={modalStyles.importTh}>Purity</th>
                         <th style={modalStyles.importTh}>Buy Price</th>
                         <th style={modalStyles.importTh}>Sell Price</th>
                         <th style={modalStyles.importTh}>Quantity</th>
@@ -1532,6 +1589,8 @@ export default function ItemsPage() {
                           <td style={modalStyles.importTd}>{item.model || '-'}</td>
                           <td style={modalStyles.importTd}>{item.type || '-'}</td>
                           <td style={modalStyles.importTd}>{item.watts || '-'}</td>
+                          <td style={modalStyles.importTd}>{item.itemType || 'gold'}</td>
+                          <td style={modalStyles.importTd}>{item.purity || '-'}</td>
                           <td style={modalStyles.importTd}>₹{item.buyPrice.toFixed(2)}</td>
                           <td style={modalStyles.importTd}>₹{item.sellPrice.toFixed(2)}</td>
                           <td style={modalStyles.importTd}>{item.quantity}</td>
@@ -1764,7 +1823,7 @@ export default function ItemsPage() {
           <Search size={16} style={styles.searchIcon} />
           <input
             type="text"
-            placeholder="Search by ID, name, model, type..."
+            placeholder="Search by ID, name, model, type, item type..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={styles.searchInput}
@@ -1790,6 +1849,10 @@ export default function ItemsPage() {
                 <th style={styles.th}>Model</th>
                 <th style={styles.th}>Type</th>
                 <th style={styles.th}>Warranty</th>
+                {/* NEW: Item Type Column */}
+                <th style={styles.th}>Item Type</th>
+                {/* NEW: Purity Column */}
+                <th style={styles.th}>Purity</th>
                 <th style={styles.th}>Buy Price (₹)</th>
                 <th style={styles.th}>Sell Price (₹)</th>
                 <th style={styles.th}>Quantity</th>
@@ -1801,7 +1864,7 @@ export default function ItemsPage() {
             <tbody>
               {currentItems.length === 0 ? (
                 <tr>
-                  <td colSpan="10" style={styles.emptyState}>
+                  <td colSpan="12" style={styles.emptyState}>
                     {search ? "No products match your search on this page" : "No products found. Click 'Add New' to get started."}
                   </td>
                 </tr>
@@ -1822,6 +1885,28 @@ export default function ItemsPage() {
                     <td style={styles.td}>{item.type || '-'}</td>
                     
                     <td style={styles.td}>{item.watts || '-'}</td>
+                    
+                    {/* NEW: Item Type Display */}
+                    <td style={styles.td}>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '2px 10px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        backgroundColor: item.itemType === 'gold' ? '#fbbf24' : 
+                                       item.itemType === 'silver' ? '#d1d5db' : '#9ca3af',
+                        color: item.itemType === 'gold' ? '#92400e' : 
+                               item.itemType === 'silver' ? '#1f2937' : '#1f2937'
+                      }}>
+                        {item.itemType === 'gold' ? '🥇 Gold' : 
+                         item.itemType === 'silver' ? '🥈 Silver' : 
+                         item.itemType || 'Other'}
+                      </span>
+                    </td>
+                    
+                    {/* NEW: Purity Display */}
+                    <td style={styles.td}>{item.purity || '-'}</td>
                     
                     <td style={styles.td}>₹{item.buyPrice?.toFixed(2) || '0.00'}</td>
                     

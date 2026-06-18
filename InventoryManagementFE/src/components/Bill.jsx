@@ -1,9 +1,9 @@
-// Bill.jsx
+// Bill.jsx - Updated with gold/silver bill features
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 const Bill = () => {
-  // State management
+  // ================= EXISTING STATE MANAGEMENT =================
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -20,36 +20,79 @@ const Bill = () => {
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerGST, setCustomerGST] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
-  const [customerType, setCustomerType] = useState('external'); // 'internal' or 'external'
-  const [customerDiscount, setCustomerDiscount] = useState(0); // Default discount for customer type
+  const [customerType, setCustomerType] = useState('external');
+  const [customerDiscount, setCustomerDiscount] = useState(0);
   
-  // Vehicle information
+  // ================= NEW GOLD/SILVER STATE =================
+  // Bill Information - New fields
+  const [billDate, setBillDate] = useState('');
+  const [goldRate, setGoldRate] = useState(0);
+  const [silverRate, setSilverRate] = useState(0);
+  
+  // Customer Details - New fields
+  const [customerAlternateContact, setCustomerAlternateContact] = useState('');
+  const [previousBillsCount, setPreviousBillsCount] = useState(0);
+  const [grade, setGrade] = useState('');
+  const [remarks, setRemarks] = useState('');
+  
+  // Item Details - New gold/silver items
+  const [itemType, setItemType] = useState('gold');
+  const [goldSilverItems, setGoldSilverItems] = useState([]);
+  const [currentGoldSilverItem, setCurrentGoldSilverItem] = useState({
+    itemName: '',
+    grossWeight: 0,
+    stoneWeight: 0,
+    netWeight: 0,
+    margin: 0,
+    grossAmount: 0,
+    netAmount: 0,
+  });
+  
+  // Gold/Silver Calculations
+  const [grossAmountTotal, setGrossAmountTotal] = useState(0);
+  const [totalDeductions, setTotalDeductions] = useState(0);
+  const [netPayableAmount, setNetPayableAmount] = useState(0);
+  
+  // Payment Details - New fields
+  const [paymentMode, setPaymentMode] = useState('cash');
+  const [amountPaid, setAmountPaid] = useState(0);
+  const [bankPendingAmount, setBankPendingAmount] = useState(0);
+  
+  // Pledge Information
+  const [pledgeOption, setPledgeOption] = useState('');
+  const [releaseSource, setReleaseSource] = useState('');
+  const [showReleaseSource, setShowReleaseSource] = useState(false);
+  
+  // Verification Documents
+  const [idProof, setIdProof] = useState('');
+  const [addressProof, setAddressProof] = useState('');
+  const [pledgeCopy, setPledgeCopy] = useState('');
+  const [receipt, setReceipt] = useState('');
+  
+  // Declaration
+  const [declarationAccepted, setDeclarationAccepted] = useState(false);
+  
+  // ================= EXISTING STATE (continued) =================
   const [vehicleName, setVehicleName] = useState('');
   const [vehicleNumber, setVehicleNumber] = useState('');
   
-  // Company information (from selected company)
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [showCompanySelector, setShowCompanySelector] = useState(false);
   
-  // User information (bill created by)
   const [createdBy, setCreatedBy] = useState('');
   
-  // Discount information
   const [discount, setDiscount] = useState(0);
-  const [discountType, setDiscountType] = useState('percentage'); // 'percentage' or 'fixed'
-  const [manualDiscount, setManualDiscount] = useState(false); // Track if discount is manually set
+  const [discountType, setDiscountType] = useState('percentage');
+  const [manualDiscount, setManualDiscount] = useState(false);
   
-  // Tax information
   const [tax, setTax] = useState(0);
-  const [taxType, setTaxType] = useState('percentage'); // 'percentage' or 'fixed'
+  const [taxType, setTaxType] = useState('percentage');
   
-  // Payment information
   const [paidAmount, setPaidAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [paymentStatus, setPaymentStatus] = useState('pending');
   
-  // Payment details for different methods
   const [cashReceived, setCashReceived] = useState(0);
   const [cardNumber, setCardNumber] = useState('');
   const [cardHolderName, setCardHolderName] = useState('');
@@ -58,7 +101,6 @@ const Bill = () => {
   const [bankName, setBankName] = useState('');
   const [chequeNumber, setChequeNumber] = useState('');
   
-  // UI states
   const [loading, setLoading] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [error, setError] = useState('');
@@ -72,22 +114,20 @@ const Bill = () => {
   const [savedBillId, setSavedBillId] = useState(null);
   const [fetchingCustomer, setFetchingCustomer] = useState(false);
 
-  // Shop details (will be overridden by selected company)
   const defaultShopDetails = {
-    name: 'Avva Inventory',
-    address: 'No.20, Satya Sai Nagar',
-    city: ' Madhavaram, Chennai, Tamil Nadu 600060',
-    phone: '',
-    gst: '',
+    name: 'OM Golden Buyers',
+    address: '177A, 1st floor, Papermils Road,',
+    city: ' Peravallur, Chennai - 600082',
+    phone: '7845767049',
+    gst: '33COUPR9413J1Z8',
   };
 
   const [shopDetails, setShopDetails] = useState(defaultShopDetails);
 
-  // Refs
   const billPaperRef = useRef(null);
   const downloadLinkRef = useRef(null);
 
-  // Create axios instance with credentials
+  // ================= API SETUP =================
   const api = axios.create({
     baseURL: 'http://localhost:5000/api',
     withCredentials: true,
@@ -96,13 +136,11 @@ const Bill = () => {
     }
   });
 
-  // Add request interceptor for debugging
   api.interceptors.request.use(request => {
     console.log('Starting Request:', request.url);
     return request;
   });
 
-  // Add response interceptor for error handling
   api.interceptors.response.use(
     response => {
       console.log('Response:', response.status);
@@ -121,7 +159,7 @@ const Bill = () => {
     }
   );
 
-  // Base styles (without dynamic values)
+  // ================= STYLES (existing + new) =================
   const baseStyles = {
     container: {
       display: 'grid',
@@ -736,15 +774,119 @@ const Bill = () => {
     companyOptionHover: {
       background: '#f0f7ff',
     },
+    // ================= NEW STYLES FOR GOLD/SILVER =================
+    goldSilverSection: {
+      background: '#f8f9fa',
+      padding: '15px',
+      borderRadius: '8px',
+      marginBottom: '20px',
+      border: '1px solid #e9ecef',
+    },
+    goldSilverToggle: {
+      display: 'flex',
+      gap: '10px',
+      marginBottom: '15px',
+    },
+    toggleBtn: {
+      padding: '8px 20px',
+      border: '2px solid #ddd',
+      borderRadius: '5px',
+      background: 'white',
+      cursor: 'pointer',
+      fontSize: '14px',
+      fontWeight: 'bold',
+      transition: 'all 0.3s',
+    },
+    toggleBtnActive: {
+      borderColor: '#007bff',
+      background: '#007bff',
+      color: 'white',
+    },
+    goldSilverItemRow: {
+      display: 'grid',
+      gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 1fr 1fr auto',
+      gap: '8px',
+      alignItems: 'center',
+      marginBottom: '8px',
+    },
+    goldSilverItemHeader: {
+      display: 'grid',
+      gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 1fr 1fr auto',
+      gap: '8px',
+      alignItems: 'center',
+      fontWeight: 'bold',
+      fontSize: '11px',
+      color: '#555',
+      padding: '8px 0',
+      borderBottom: '2px solid #ddd',
+    },
+    goldSilverTotals: {
+      marginTop: '15px',
+      padding: '15px',
+      background: 'white',
+      borderRadius: '5px',
+      border: '1px solid #ddd',
+    },
+    totalRow: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      padding: '5px 0',
+      fontSize: '12px',
+    },
+    totalRowBold: {
+      fontWeight: 'bold',
+      fontSize: '14px',
+      borderTop: '2px solid #333',
+      paddingTop: '10px',
+      marginTop: '5px',
+    },
+    smallInput: {
+      width: '100%',
+      padding: '4px 6px',
+      border: '1px solid #ddd',
+      borderRadius: '3px',
+      fontSize: '12px',
+      fontFamily: "'Courier New', monospace",
+    },
+    readOnlyInput: {
+      width: '100%',
+      padding: '4px 6px',
+      border: '1px solid #e9ecef',
+      borderRadius: '3px',
+      fontSize: '12px',
+      fontFamily: "'Courier New', monospace",
+      background: '#f8f9fa',
+      color: '#666',
+    },
+    pledgeSection: {
+      marginTop: '10px',
+      padding: '10px',
+      background: '#f8f9fa',
+      borderRadius: '5px',
+      border: '1px solid #e9ecef',
+    },
+    docsSection: {
+      marginTop: '10px',
+      padding: '10px',
+      background: '#f8f9fa',
+      borderRadius: '5px',
+      border: '1px solid #e9ecef',
+    },
+    declarationSection: {
+      marginTop: '15px',
+      padding: '15px',
+      background: '#f8f9fa',
+      borderRadius: '5px',
+      border: '1px solid #e9ecef',
+    },
   };
 
-  // Check authentication on mount
+  // ================= EXISTING EFFECTS =================
   useEffect(() => {
     const user = localStorage.getItem('user');
     if (user) {
       try {
         const userData = JSON.parse(user);
-        // Set the name for display and the ID for saving
         setCreatedBy(userData.full_name || userData.name || userData.username || 'System');
       } catch (e) {
         setCreatedBy('System');
@@ -758,18 +900,66 @@ const Bill = () => {
     }
   }, []);
 
-  // Fetch companies on mount
   useEffect(() => {
     fetchCompanies();
   }, []);
 
-  // Fetch companies from API
+  // ================= NEW EFFECTS FOR GOLD/SILVER =================
+  // Initialize bill date
+  useEffect(() => {
+    setBillDate(new Date().toISOString().split('T')[0]);
+  }, []);
+
+  // Calculate gold/silver item values when current item changes
+  useEffect(() => {
+    const grossWeight = parseFloat(currentGoldSilverItem.grossWeight) || 0;
+    const stoneWeight = parseFloat(currentGoldSilverItem.stoneWeight) || 0;
+    const netWeight = Math.max(0, grossWeight - stoneWeight);
+    const margin = parseFloat(currentGoldSilverItem.margin) || 0;
+    const rate = itemType === 'gold' ? goldRate : silverRate;
+    const grossAmount = netWeight * rate;
+    const netAmount = Math.max(0, grossAmount - margin);
+    
+    setCurrentGoldSilverItem(prev => ({
+      ...prev,
+      netWeight: parseFloat(netWeight.toFixed(3)),
+      grossAmount: parseFloat(grossAmount.toFixed(2)),
+      netAmount: parseFloat(netAmount.toFixed(2)),
+    }));
+  }, [currentGoldSilverItem.grossWeight, currentGoldSilverItem.stoneWeight, 
+      currentGoldSilverItem.margin, goldRate, silverRate, itemType]);
+
+  // Calculate totals when gold/silver items change
+  useEffect(() => {
+    let grossTotal = 0;
+    let deductionsTotal = 0;
+    
+    goldSilverItems.forEach(item => {
+      grossTotal += item.grossAmount || 0;
+      deductionsTotal += item.margin || 0;
+    });
+    
+    setGrossAmountTotal(grossTotal);
+    setTotalDeductions(deductionsTotal);
+    setNetPayableAmount(grossTotal - deductionsTotal);
+  }, [goldSilverItems]);
+
+  // Handle pledge option change
+  useEffect(() => {
+    if (pledgeOption === 'physical') {
+      setShowReleaseSource(true);
+    } else {
+      setShowReleaseSource(false);
+      setReleaseSource('');
+    }
+  }, [pledgeOption]);
+
+  // ================= EXISTING FUNCTIONS (preserved) =================
   const fetchCompanies = async () => {
     try {
       const response = await api.get('/companies/list');
       if (response.data && response.data.length > 0) {
         setCompanies(response.data);
-        // Auto-select first company if available
         const firstCompany = response.data[0];
         setSelectedCompany(firstCompany);
         fetchCompanyDetails(firstCompany.id);
@@ -780,7 +970,6 @@ const Bill = () => {
     }
   };
 
-  // Fetch company details by ID
   const fetchCompanyDetails = async (companyId) => {
     try {
       const response = await api.get(`/companies/${companyId}`);
@@ -799,7 +988,6 @@ const Bill = () => {
     }
   };
 
-  // Handle company selection
   const handleCompanySelect = async (company) => {
     setSelectedCompany(company);
     setShowCompanySelector(false);
@@ -808,7 +996,6 @@ const Bill = () => {
     setTimeout(() => setSuccess(''), 2000);
   };
 
-  // Generate random bill number (for display only, backend will generate unique)
   const generateBillNumber = () => {
     const now = new Date();
     const year = now.getFullYear().toString().slice(-2);
@@ -824,7 +1011,6 @@ const Bill = () => {
     setBillNumber(`BT-${year}${month}${day}-${random}`);
   };
 
-  // Update date and time
   const updateDateTime = () => {
     const now = new Date();
     setCurrentDate(now.toLocaleDateString('en-IN', {
@@ -839,7 +1025,6 @@ const Bill = () => {
     }));
   };
 
-  // Initialize
   useEffect(() => {
     generateBillNumber();
     updateDateTime();
@@ -848,7 +1033,6 @@ const Bill = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Search products with debounce
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       if (searchQuery.length >= 2) {
@@ -861,7 +1045,6 @@ const Bill = () => {
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
 
-  // Update payment status when paid amount changes
   useEffect(() => {
     const total = calculateTotal();
     if (paidAmount === 0) {
@@ -873,11 +1056,10 @@ const Bill = () => {
     }
   }, [paidAmount, selectedProducts, discount, tax, discountType, taxType]);
 
-  // Set discount based on customer type (only if not manually set)
   useEffect(() => {
     if (!manualDiscount) {
       if (customerType === 'internal') {
-        setCustomerDiscount(10); // 10% discount for internal customers
+        setCustomerDiscount(10);
         setDiscount(10);
         setDiscountType('percentage');
       } else {
@@ -888,7 +1070,6 @@ const Bill = () => {
     }
   }, [customerType, manualDiscount]);
 
-  // Add thermal print styles
   useEffect(() => {
     const style = document.createElement('style');
     style.innerHTML = `
@@ -1022,7 +1203,6 @@ const Bill = () => {
     };
   }, []);
 
-  // Clear payment method specific fields when method changes
   useEffect(() => {
     setShowPaymentDetails(true);
     switch(paymentMethod) {
@@ -1060,7 +1240,6 @@ const Bill = () => {
     }
   }, [paymentMethod]);
 
-  // Fetch customer by phone
   const fetchCustomerByPhone = async (phone) => {
     if (phone.length < 10) return;
     
@@ -1084,7 +1263,6 @@ const Bill = () => {
     }
   };
 
-  // Auto-fetch customer when phone reaches 10 digits
   useEffect(() => {
     const cleanPhone = customerPhone.replace(/\D/g, '');
     if (cleanPhone.length === 10) {
@@ -1092,10 +1270,7 @@ const Bill = () => {
     }
   }, [customerPhone]);
 
-
-
-
-  // Search products API call
+  // ================= EXISTING PRODUCT FUNCTIONS =================
   const searchProducts = async () => {
     if (!isAuthenticated) return;
     
@@ -1118,7 +1293,6 @@ const Bill = () => {
     }
   };
 
-  // Get product by barcode
   const getProductByBarcode = async () => {
     if (!isAuthenticated) return;
     if (!barcode.trim()) return;
@@ -1142,7 +1316,6 @@ const Bill = () => {
     }
   };
 
-  // Add product to bill
   const addProductToBill = (product) => {
     const existingProduct = selectedProducts.find(p => p.id === product.id);
     
@@ -1190,14 +1363,12 @@ const Bill = () => {
     setSearchResults([]);
   };
 
-  // Update quantity - Now sets to 0 instead of deleting
   const updateQuantity = (productId, newQuantity) => {
     const product = selectedProducts.find(p => p.id === productId);
     
     if (product) {
       newQuantity = parseInt(newQuantity) || 0;
       
-      // Allow quantity to be 0 (will show as 0 quantity item)
       if (newQuantity >= 0 && newQuantity <= product.maxQuantity) {
         const updatedProducts = selectedProducts.map(p =>
           p.id === productId
@@ -1219,7 +1390,6 @@ const Bill = () => {
     }
   };
 
-  // Remove product - Only for complete removal (separate function)
   const removeProduct = (productId) => {
     const product = selectedProducts.find(p => p.id === productId);
     setSelectedProducts(selectedProducts.filter(p => p.id !== productId));
@@ -1227,14 +1397,54 @@ const Bill = () => {
     setTimeout(() => setSuccess(''), 2000);
   };
 
-  // Calculate subtotal (only items with quantity > 0)
+  // ================= NEW GOLD/SILVER ITEM FUNCTIONS =================
+  const addGoldSilverItem = () => {
+    if (!currentGoldSilverItem.itemName.trim()) {
+      setError('Please enter item name');
+      return;
+    }
+    
+    if (currentGoldSilverItem.grossWeight <= 0) {
+      setError('Please enter valid gross weight');
+      return;
+    }
+    
+    setGoldSilverItems([...goldSilverItems, { 
+      ...currentGoldSilverItem, 
+      id: Date.now() 
+    }]);
+    
+    setCurrentGoldSilverItem({
+      itemName: '',
+      grossWeight: 0,
+      stoneWeight: 0,
+      netWeight: 0,
+      margin: 0,
+      grossAmount: 0,
+      netAmount: 0,
+    });
+    
+    setError('');
+  };
+
+  const removeGoldSilverItem = (id) => {
+    setGoldSilverItems(goldSilverItems.filter(item => item.id !== id));
+  };
+
+  const updateGoldSilverItem = (field, value) => {
+    setCurrentGoldSilverItem(prev => ({
+      ...prev,
+      [field]: parseFloat(value) || 0
+    }));
+  };
+
+  // ================= EXISTING CALCULATION FUNCTIONS =================
   const calculateSubtotal = () => {
     return selectedProducts
       .filter(p => p.quantity > 0)
       .reduce((sum, p) => sum + p.total, 0);
   };
 
-  // Calculate discount amount
   const calculateDiscountAmount = () => {
     const subtotal = calculateSubtotal();
     if (subtotal === 0) return 0;
@@ -1242,10 +1452,9 @@ const Bill = () => {
     if (discountType === 'percentage') {
       return (subtotal * discount) / 100;
     }
-    return Math.min(discount, subtotal); // Fixed amount cannot exceed subtotal
+    return Math.min(discount, subtotal);
   };
 
-  // Calculate tax amount (applied after discount)
   const calculateTaxAmount = () => {
     const subtotal = calculateSubtotal();
     const discountAmount = calculateDiscountAmount();
@@ -1256,10 +1465,9 @@ const Bill = () => {
     if (taxType === 'percentage') {
       return (afterDiscount * tax) / 100;
     }
-    return Math.min(tax, afterDiscount); // Fixed tax cannot exceed after discount amount
+    return Math.min(tax, afterDiscount);
   };
 
-  // Calculate total (subtotal - discount + tax)
   const calculateTotal = () => {
     const subtotal = calculateSubtotal();
     const discountAmount = calculateDiscountAmount();
@@ -1267,25 +1475,22 @@ const Bill = () => {
     return Math.max(0, subtotal - discountAmount + taxAmount);
   };
 
-  // Calculate change
   const calculateChange = () => {
     const total = calculateTotal();
     return Math.max(0, paidAmount - total);
   };
 
-  // Calculate due amount
   const calculateDue = () => {
     const total = calculateTotal();
     return Math.max(0, total - paidAmount);
   };
 
-  // Handle discount change
+  // ================= EXISTING HANDLERS =================
   const handleDiscountChange = (value) => {
-    setManualDiscount(true); // Mark as manually set
+    setManualDiscount(true);
     const numValue = parseFloat(value) || 0;
     const subtotal = calculateSubtotal();
     
-    // Validate based on discount type
     if (discountType === 'percentage') {
       if (numValue > 100) {
         setError('Percentage discount cannot exceed 100%');
@@ -1306,19 +1511,15 @@ const Bill = () => {
       }
     }
     
-    // Clear error after 3 seconds
     setTimeout(() => setError(''), 3000);
   };
 
-  // Handle discount type change
   const handleDiscountTypeChange = (type) => {
-    setManualDiscount(true); // Mark as manually set
+    setManualDiscount(true);
     const subtotal = calculateSubtotal();
     setDiscountType(type);
     
-    // Convert discount value when type changes
     if (type === 'percentage') {
-      // If switching to percentage, convert fixed amount to percentage
       if (discountType === 'fixed' && subtotal > 0) {
         const percentage = (discount / subtotal) * 100;
         setDiscount(Math.min(100, Math.round(percentage * 100) / 100));
@@ -1326,7 +1527,6 @@ const Bill = () => {
         setDiscount(100);
       }
     } else {
-      // If switching to fixed, convert percentage to fixed amount
       if (discountType === 'percentage' && subtotal > 0) {
         const fixed = (subtotal * discount) / 100;
         setDiscount(Math.min(subtotal, Math.round(fixed * 100) / 100));
@@ -1336,7 +1536,6 @@ const Bill = () => {
     }
   };
 
-  // Reset discount to customer default
   const resetDiscountToDefault = () => {
     setManualDiscount(false);
     if (customerType === 'internal') {
@@ -1348,14 +1547,12 @@ const Bill = () => {
     }
   };
 
-  // Handle cash payment
   const handleCashPayment = (received) => {
     const amount = parseFloat(received) || 0;
     setCashReceived(amount);
     setPaidAmount(amount);
   };
 
-  // Handle exact payment
   const handleExactPayment = () => {
     const total = calculateTotal();
     setPaidAmount(total);
@@ -1364,12 +1561,13 @@ const Bill = () => {
     }
   };
 
-  // Save bill to database
+  // ================= MODIFIED SAVE BILL FUNCTION =================
   const saveBillToDatabase = async () => {
     const activeProducts = selectedProducts.filter(p => p.quantity > 0);
+    const hasGoldSilverItems = goldSilverItems.length > 0;
     
-    if (activeProducts.length === 0) {
-      setError('No items with quantity > 0 to save!');
+    if (activeProducts.length === 0 && !hasGoldSilverItems) {
+      setError('No items to save!');
       return null;
     }
 
@@ -1377,7 +1575,7 @@ const Bill = () => {
     setError('');
 
     try {
-      // Prepare bill data for API
+      // Prepare bill data with both product items and gold/silver items
       const billData = {
         customerName: customerName,
         customerPhone: customerPhone,
@@ -1395,21 +1593,52 @@ const Bill = () => {
         paidAmount: paidAmount,
         paymentMethod: paymentMethod,
         createdBy: JSON.parse(localStorage.getItem('user'))?.id,
-        createdByName: createdBy, // Using the state variable which now has the correct name
+        createdByName: createdBy,
         items: activeProducts.map(p => ({
           productId: p.id,
           quantity: p.quantity
-        }))
+        })),
+        // NEW: Gold/Silver bill data
+        billDate: billDate,
+        goldRate: goldRate,
+        silverRate: silverRate,
+        customerAlternateContact: customerAlternateContact,
+        previousBillsCount: previousBillsCount,
+        grade: grade,
+        remarks: remarks,
+        itemType: itemType,
+        goldSilverItems: goldSilverItems.map(item => ({
+          itemName: item.itemName,
+          grossWeight: item.grossWeight,
+          stoneWeight: item.stoneWeight,
+          netWeight: item.netWeight,
+          margin: item.margin,
+          grossAmount: item.grossAmount,
+          netAmount: item.netAmount,
+        })),
+        grossAmountTotal: grossAmountTotal,
+        totalDeductions: totalDeductions,
+        netPayableAmount: netPayableAmount,
+        paymentMode: paymentMode,
+        amountPaid: amountPaid,
+        bankPendingAmount: bankPendingAmount,
+        pledgeOption: pledgeOption,
+        releaseSource: releaseSource,
+        idProof: idProof,
+        addressProof: addressProof,
+        pledgeCopy: pledgeCopy,
+        receipt: receipt,
+        declarationAccepted: declarationAccepted,
       };
 
-      console.log('Saving bill:', billData);
+      console.log('Saving bill with gold/silver items:', billData);
 
       const response = await api.post('/billing/bills', billData);
 
       if (response.data.success) {
         setSuccess('Bill saved successfully!');
         setSavedBillId(response.data.billId);
-        setBillNumber(response.data.billNumber); // Update with actual bill number from backend
+        setBillNumber(response.data.billNumber);
         setLastGeneratedBill({
           billNumber: response.data.billNumber,
           customerPhone: customerPhone,
@@ -1434,8 +1663,10 @@ const Bill = () => {
     }
   };
 
-  // Generate HTML content for bill with updated shop details
+  // ================= EXISTING UI FUNCTIONS =================
   const generateBillHTML = () => {
+    // ... (existing generateBillHTML function - preserved)
+    // This function remains unchanged
     const subtotal = calculateSubtotal();
     const discountAmount = calculateDiscountAmount();
     const taxAmount = calculateTaxAmount();
@@ -1893,11 +2124,10 @@ const Bill = () => {
     `;
   };
 
-  // Download bill as HTML file
   const downloadBill = () => {
     const subtotal = calculateSubtotal();
-    if (subtotal === 0) {
-      setError('No items with quantity > 0 to download!');
+    if (subtotal === 0 && goldSilverItems.length === 0) {
+      setError('No items to download!');
       setTimeout(() => setError(''), 3000);
       return;
     }
@@ -1917,42 +2147,34 @@ const Bill = () => {
     setTimeout(() => setSuccess(''), 3000);
   };
 
-  // Handle payment completion - Save to DB then download/print
   const handlePaymentComplete = async () => {
     const subtotal = calculateSubtotal();
-    if (subtotal === 0) {
-      setError('No items with quantity > 0 in bill!');
+    if (subtotal === 0 && goldSilverItems.length === 0) {
+      setError('No items in bill!');
       setTimeout(() => setError(''), 3000);
       return;
     }
 
-    // Save to database first
     const savedData = await saveBillToDatabase();
     
     if (savedData) {
-      // Then download the bill
       downloadBill();
     }
   };
 
-  // Handle print - Save to DB then print
   const handlePrint = async () => {
     const subtotal = calculateSubtotal();
-    if (subtotal === 0) {
-      setError('No items with quantity > 0 to print!');
+    if (subtotal === 0 && goldSilverItems.length === 0) {
+      setError('No items to print!');
       setTimeout(() => setError(''), 3000);
       return;
     }
 
-    // Save to database first
     const savedData = await saveBillToDatabase();
     
     if (savedData) {
-      // Then print
-      // Get the bill content
       const billContent = billPaperRef.current.outerHTML;
       
-      // Create a new window for printing
       const printWindow = window.open('', '_blank');
       
       if (printWindow) {
@@ -2132,16 +2354,14 @@ const Bill = () => {
               ${billContent}
               <script>
                 window.onload = function() {
-                  // Small delay to ensure styles are applied
                   setTimeout(function() {
                     window.print();
-                    // Close after print dialog is handled
                     setTimeout(function() {
                       window.close();
                     }, 500);
                   }, 300);
                 };
-              </script>
+              <\/script>
             </body>
           </html>
         `);
@@ -2153,7 +2373,6 @@ const Bill = () => {
     }
   };
 
-  // Handle WhatsApp share
   const handleWhatsAppShare = () => {
     if (!customerPhone) {
       setError('Please enter customer phone number to share via WhatsApp');
@@ -2161,20 +2380,16 @@ const Bill = () => {
       return;
     }
 
-    // Clean phone number (remove non-digits)
     const cleanPhone = customerPhone.replace(/\D/g, '');
     
-    // Check if phone number is valid
     if (cleanPhone.length < 10) {
       setError('Please enter a valid 10-digit phone number');
       setTimeout(() => setError(''), 3000);
       return;
     }
 
-    // Format phone number for WhatsApp (add country code if not present)
     const whatsappNumber = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
 
-    // Create message
     const subtotal = calculateSubtotal();
     const discountAmount = calculateDiscountAmount();
     const taxAmount = calculateTaxAmount();
@@ -2182,7 +2397,7 @@ const Bill = () => {
     const due = calculateDue();
     const activeProducts = selectedProducts.filter(p => p.quantity > 0);
 
-    let message = `*Avva Inventory*\n`;
+    let message = `*${shopDetails.name}*\n`;
     message += `${shopDetails.address}\n`;
     message += `${shopDetails.city}\n`;
     if (shopDetails.phone) message += `Ph: ${shopDetails.phone}\n`;
@@ -2192,18 +2407,36 @@ const Bill = () => {
     message += `Type: ${customerType === 'internal' ? 'INTERNAL' : 'EXTERNAL'}\n`;
     if (vehicleName) message += `Vehicle: ${vehicleName}\n`;
     if (vehicleNumber) message += `Vehicle No: ${vehicleNumber}\n`;
-    message += `================\n`;
-    message += `ITEMS:\n`;
     
-    activeProducts.forEach(p => {
-      message += `${p.name.substring(0, 15)}... ${p.quantity}x ₹${p.sellPrice} = ₹${p.total.toFixed(2)}\n`;
-    });
+    // Add gold/silver items to message
+    if (goldSilverItems.length > 0) {
+      message += `\n--- GOLD/SILVER ITEMS ---\n`;
+      goldSilverItems.forEach(item => {
+        message += `${item.itemName}: ${item.netWeight}g × ₹${itemType === 'gold' ? goldRate : silverRate} = ₹${item.grossAmount.toFixed(2)}\n`;
+      });
+      message += `Gross Total: ₹${grossAmountTotal.toFixed(2)}\n`;
+      message += `Deductions: ₹${totalDeductions.toFixed(2)}\n`;
+      message += `Net Payable: ₹${netPayableAmount.toFixed(2)}\n`;
+    }
     
-    message += `================\n`;
-    message += `Subtotal: ₹${subtotal.toFixed(2)}\n`;
-    if (discountAmount > 0) message += `Discount: -₹${discountAmount.toFixed(2)}\n`;
-    if (taxAmount > 0) message += `Tax: +₹${taxAmount.toFixed(2)}\n`;
-    message += `*TOTAL: ₹${total.toFixed(2)}*\n`;
+    // Add product items
+    if (activeProducts.length > 0) {
+      message += `\n--- PRODUCT ITEMS ---\n`;
+      activeProducts.forEach(p => {
+        message += `${p.name.substring(0, 15)}... ${p.quantity}x ₹${p.sellPrice} = ₹${p.total.toFixed(2)}\n`;
+      });
+      message += `Subtotal: ₹${subtotal.toFixed(2)}\n`;
+      if (discountAmount > 0) message += `Discount: -₹${discountAmount.toFixed(2)}\n`;
+      if (taxAmount > 0) message += `Tax: +₹${taxAmount.toFixed(2)}\n`;
+      message += `Total: ₹${total.toFixed(2)}\n`;
+    }
+    
+    // Combined total if both types exist
+    if (activeProducts.length > 0 && goldSilverItems.length > 0) {
+      const combinedTotal = total + netPayableAmount;
+      message += `\n*GRAND TOTAL: ₹${combinedTotal.toFixed(2)}*\n`;
+    }
+    
     message += `================\n`;
     message += `Payment: ${paymentMethod.toUpperCase()}\n`;
     message += `Paid: ₹${paidAmount.toFixed(2)}\n`;
@@ -2214,20 +2447,17 @@ const Bill = () => {
     message += `Goods once sold not returnable\n`;
     message += `Created by: ${createdBy}`;
 
-    // Encode message for URL
     const encodedMessage = encodeURIComponent(message);
-    
-    // Open WhatsApp with customer's number
     window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, '_blank');
     
     setSuccess('WhatsApp opened with bill details!');
     setTimeout(() => setSuccess(''), 3000);
   };
 
-  // Clear bill
   const clearBill = () => {
     if (window.confirm('Clear all items?')) {
       setSelectedProducts([]);
+      setGoldSilverItems([]);
       setCustomerName('Walk-in Customer');
       setCustomerPhone('');
       setCustomerEmail('');
@@ -2252,6 +2482,23 @@ const Bill = () => {
       setTransactionId('');
       setBankName('');
       setChequeNumber('');
+      // Clear new fields
+      setGoldRate(0);
+      setSilverRate(0);
+      setCustomerAlternateContact('');
+      setPreviousBillsCount(0);
+      setGrade('');
+      setRemarks('');
+      setAmountPaid(0);
+      setBankPendingAmount(0);
+      setPledgeOption('');
+      setReleaseSource('');
+      setShowReleaseSource(false);
+      setIdProof('');
+      setAddressProof('');
+      setPledgeCopy('');
+      setReceipt('');
+      setDeclarationAccepted(false);
       setError('');
       setSuccess('');
       setBillSaved(false);
@@ -2262,19 +2509,16 @@ const Bill = () => {
     }
   };
 
-  // Handle new bill
   const handleNewBill = () => {
     clearBill();
   };
 
-  // Handle key press for barcode
   const handleBarcodeKeyPress = (e) => {
     if (e.key === 'Enter') {
       getProductByBarcode();
     }
   };
 
-  // Test API connection
   const testAPIConnection = async () => {
     try {
       const response = await api.get('/health');
@@ -2284,12 +2528,10 @@ const Bill = () => {
     }
   };
 
-  // Run API test on mount
   useEffect(() => {
     testAPIConnection();
   }, []);
 
-  // Filter out items with quantity 0 for display in bill summary
   const activeProducts = selectedProducts.filter(p => p.quantity > 0);
   const subtotal = calculateSubtotal();
   const discountAmount = calculateDiscountAmount();
@@ -2298,7 +2540,6 @@ const Bill = () => {
   const due = calculateDue();
   const change = calculateChange();
 
-  // Dynamic styles that depend on state
   const dynamicStyles = {
     changeAmount: {
       fontWeight: 'bold',
@@ -2311,7 +2552,7 @@ const Bill = () => {
     }
   };
 
-  // Show login required message if not authenticated
+  // ================= RENDER =================
   if (!isAuthenticated) {
     return (
       <div style={{...baseStyles.container, justifyContent: 'center', alignItems: 'center'}}>
@@ -2329,9 +2570,8 @@ const Bill = () => {
     );
   }
 
-  // Handle phone number input change
   const handlePhoneChange = (e) => {
-    const value = e.target.value.replace(/\D/g, ''); // Only allow digits
+    const value = e.target.value.replace(/\D/g, '');
     if (value.length <= 10) {
       setCustomerPhone(value);
     }
@@ -2387,6 +2627,7 @@ const Bill = () => {
           </div>
         )}
         
+        {/* ================= EXISTING SEARCH SECTION ================= */}
         <div style={baseStyles.searchSection}>
           <div style={baseStyles.searchBox}>
             <label style={baseStyles.searchLabel}>🔍 Search Products:</label>
@@ -2448,7 +2689,176 @@ const Bill = () => {
             </div>
           )}
         </div>
-        
+
+        {/* ================= NEW GOLD/SILVER SECTION ================= */}
+        <div style={baseStyles.goldSilverSection}>
+          <h3 style={{fontSize: '14px', marginBottom: '10px', color: '#333'}}>
+            🥇🥈 Gold / Silver Items
+          </h3>
+          
+          {/* Gold/Silver Toggle */}
+          <div style={baseStyles.goldSilverToggle}>
+            <button
+              style={{
+                ...baseStyles.toggleBtn,
+                ...(itemType === 'gold' ? baseStyles.toggleBtnActive : {})
+              }}
+              onClick={() => setItemType('gold')}
+            >
+              🥇 Gold
+            </button>
+            <button
+              style={{
+                ...baseStyles.toggleBtn,
+                ...(itemType === 'silver' ? baseStyles.toggleBtnActive : {})
+              }}
+              onClick={() => setItemType('silver')}
+            >
+              🥈 Silver
+            </button>
+          </div>
+
+          {/* Rates Display */}
+          <div style={{display: 'flex', gap: '15px', marginBottom: '10px', fontSize: '12px'}}>
+            <span>Gold Rate: ₹{goldRate}/g</span>
+            <span>Silver Rate: ₹{silverRate}/g</span>
+          </div>
+
+          {/* Item Entry Row */}
+          <div style={baseStyles.goldSilverItemRow}>
+            <div>
+              <label style={{fontSize: '10px', color: '#666'}}>Item Name</label>
+              <input
+                type="text"
+                style={baseStyles.smallInput}
+                value={currentGoldSilverItem.itemName}
+                onChange={(e) => setCurrentGoldSilverItem(prev => ({...prev, itemName: e.target.value}))}
+                placeholder="Item name"
+              />
+            </div>
+            <div>
+              <label style={{fontSize: '10px', color: '#666'}}>Gross Wt</label>
+              <input
+                type="number"
+                style={baseStyles.smallInput}
+                value={currentGoldSilverItem.grossWeight || ''}
+                onChange={(e) => updateGoldSilverItem('grossWeight', e.target.value)}
+                placeholder="g"
+                step="0.001"
+              />
+            </div>
+            <div>
+              <label style={{fontSize: '10px', color: '#666'}}>Stone Wt</label>
+              <input
+                type="number"
+                style={baseStyles.smallInput}
+                value={currentGoldSilverItem.stoneWeight || ''}
+                onChange={(e) => updateGoldSilverItem('stoneWeight', e.target.value)}
+                placeholder="g"
+                step="0.001"
+              />
+            </div>
+            <div>
+              <label style={{fontSize: '10px', color: '#666'}}>Net Wt</label>
+              <input
+                type="text"
+                style={baseStyles.readOnlyInput}
+                value={currentGoldSilverItem.netWeight.toFixed(3)}
+                readOnly
+              />
+            </div>
+            <div>
+              <label style={{fontSize: '10px', color: '#666'}}>Margin</label>
+              <input
+                type="number"
+                style={baseStyles.smallInput}
+                value={currentGoldSilverItem.margin || ''}
+                onChange={(e) => updateGoldSilverItem('margin', e.target.value)}
+                placeholder="₹"
+                step="0.01"
+              />
+            </div>
+            <div>
+              <label style={{fontSize: '10px', color: '#666'}}>Gross Amt</label>
+              <input
+                type="text"
+                style={baseStyles.readOnlyInput}
+                value={currentGoldSilverItem.grossAmount.toFixed(2)}
+                readOnly
+              />
+            </div>
+            <div>
+              <label style={{fontSize: '10px', color: '#666'}}>Net Amt</label>
+              <input
+                type="text"
+                style={baseStyles.readOnlyInput}
+                value={currentGoldSilverItem.netAmount.toFixed(2)}
+                readOnly
+              />
+            </div>
+            <div>
+              <button
+                style={{...baseStyles.btn, ...baseStyles.btnSuccess, padding: '4px 12px', fontSize: '12px'}}
+                onClick={addGoldSilverItem}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+
+          {/* Gold/Silver Items List */}
+          {goldSilverItems.length > 0 && (
+            <div style={{marginTop: '10px'}}>
+              <div style={baseStyles.goldSilverItemHeader}>
+                <span>Item</span>
+                <span>Gross</span>
+                <span>Stone</span>
+                <span>Net</span>
+                <span>Margin</span>
+                <span>Gross Amt</span>
+                <span>Net Amt</span>
+                <span>Action</span>
+              </div>
+              {goldSilverItems.map(item => (
+                <div key={item.id} style={baseStyles.goldSilverItemRow}>
+                  <span style={{fontSize: '12px'}}>{item.itemName}</span>
+                  <span style={{fontSize: '12px'}}>{item.grossWeight}</span>
+                  <span style={{fontSize: '12px'}}>{item.stoneWeight}</span>
+                  <span style={{fontSize: '12px'}}>{item.netWeight.toFixed(3)}</span>
+                  <span style={{fontSize: '12px'}}>₹{item.margin.toFixed(2)}</span>
+                  <span style={{fontSize: '12px'}}>₹{item.grossAmount.toFixed(2)}</span>
+                  <span style={{fontSize: '12px'}}>₹{item.netAmount.toFixed(2)}</span>
+                  <button
+                    style={{...baseStyles.btn, ...baseStyles.btnDanger, padding: '2px 6px', fontSize: '12px'}}
+                    onClick={() => removeGoldSilverItem(item.id)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Gold/Silver Totals */}
+          {(goldSilverItems.length > 0 || grossAmountTotal > 0) && (
+            <div style={baseStyles.goldSilverTotals}>
+              <div style={baseStyles.totalRow}>
+                <span>Gross Amount Total:</span>
+                <span>₹{grossAmountTotal.toFixed(2)}</span>
+              </div>
+              <div style={baseStyles.totalRow}>
+                <span>Total Deductions:</span>
+                <span>₹{totalDeductions.toFixed(2)}</span>
+              </div>
+              <div style={{...baseStyles.totalRow, ...baseStyles.totalRowBold}}>
+                <span>Net Payable Amount:</span>
+                <span style={{color: '#28a745'}}>₹{netPayableAmount.toFixed(2)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ================= EXISTING PRODUCT ITEMS ================= */}
         <div style={baseStyles.selectedProducts}>
           <h3 style={baseStyles.selectedProductsTitle}>
             🛒 Current Bill Items ({activeProducts.length} active / {selectedProducts.length} total)
@@ -2505,7 +2915,7 @@ const Bill = () => {
         </div>
       </div>
       
-      {/* Right Panel - Thermal Bill */}
+      {/* ================= RIGHT PANEL - BILL ================= */}
       <div style={baseStyles.billPanel} className="no-print">
         <div style={baseStyles.billContainer}>
           <div 
@@ -2514,7 +2924,7 @@ const Bill = () => {
             ref={billPaperRef}
           >
             <div className="bill-header">
-              <img src="/avva-logo.jpeg" alt="Avva Inventory Logo" style={{ maxWidth: '100px', marginBottom: '5px', display: 'block', marginLeft: 'auto', marginRight: 'auto' }} />
+              <img src="/m3-logo.png" alt="OM Golden Buyers Logo" style={{ maxWidth: '100px', marginBottom: '5px', display: 'block', marginLeft: 'auto', marginRight: 'auto' }} />
               <h1 style={baseStyles.billHeaderH1}>{shopDetails.name}</h1>
               <p style={baseStyles.billHeaderP}>{shopDetails.address}</p>
               <p style={baseStyles.billHeaderP}>{shopDetails.city}</p>
@@ -2584,10 +2994,6 @@ const Bill = () => {
               )}
             </div>
             
-            {/* Vehicle Section */}
-           
-            
-            {/* Display vehicle info in print version */}
             {(vehicleName || vehicleNumber) && (
               <div style={{margin: '5px 0', padding: '3px', background: '#f0f0f0', fontSize: '9px'}} className="no-print-visible">
                 <div><strong>Vehicle:</strong> {vehicleName || '-'}</div>
@@ -2601,7 +3007,7 @@ const Bill = () => {
                 value={customerType}
                 onChange={(e) => {
                   setCustomerType(e.target.value);
-                  setManualDiscount(false); // Reset manual discount flag when customer type changes
+                  setManualDiscount(false);
                 }}
               >
                 <option value="external">👤 External Customer</option>
@@ -2654,7 +3060,7 @@ const Bill = () => {
               />
             </div>
             
-            {/* Discount Section - Enhanced */}
+            {/* Discount Section */}
             <div style={baseStyles.discountSection} className="no-print">
               <div 
                 style={baseStyles.discountHeader}
@@ -2757,17 +3163,19 @@ const Bill = () => {
                 <span>₹{subtotal.toFixed(2)}</span>
               </div>
               
-              <div className="summary-row">
-                <span>
-                  Discount 
-                  {discount > 0 && (
-                    <span style={{fontSize: '8px', color: '#666'}}>
-                      {' '}({discount}{discountType === 'percentage' ? '%' : '₹'})
-                    </span>
-                  )}:
-                </span>
-                <span>-₹{discountAmount.toFixed(2)}</span>
-              </div>
+              {discount > 0 && (
+                <div className="summary-row">
+                  <span>
+                    Discount 
+                    {discount > 0 && (
+                      <span style={{fontSize: '8px', color: '#666'}}>
+                        {' '}({discount}{discountType === 'percentage' ? '%' : '₹'})
+                      </span>
+                    )}:
+                  </span>
+                  <span>-₹{discountAmount.toFixed(2)}</span>
+                </div>
+              )}
               
               <div className="summary-row">
                 <span>After Discount:</span>
@@ -2969,10 +3377,10 @@ const Bill = () => {
               style={{
                 ...baseStyles.btn,
                 ...baseStyles.btnPrimary,
-                ...(loading || activeProducts.length === 0 ? baseStyles.btnDisabled : {})
+                ...(loading || (activeProducts.length === 0 && goldSilverItems.length === 0) ? baseStyles.btnDisabled : {})
               }}
               onClick={handlePrint}
-              disabled={loading || activeProducts.length === 0}
+              disabled={loading || (activeProducts.length === 0 && goldSilverItems.length === 0)}
             >
               {loading ? '⏳ Saving...' : '🖨️ Print'}
             </button>
@@ -2980,10 +3388,10 @@ const Bill = () => {
               style={{
                 ...baseStyles.btn,
                 ...baseStyles.btnSuccess,
-                ...(loading || activeProducts.length === 0 ? baseStyles.btnDisabled : {})
+                ...(loading || (activeProducts.length === 0 && goldSilverItems.length === 0) ? baseStyles.btnDisabled : {})
               }}
               onClick={handlePaymentComplete}
-              disabled={loading || activeProducts.length === 0}
+              disabled={loading || (activeProducts.length === 0 && goldSilverItems.length === 0)}
             >
               {loading ? '⏳ Saving...' : '💰 Pay & Download'}
             </button>
@@ -3011,7 +3419,6 @@ const Bill = () => {
             </button>
           </div>
 
-          {/* WhatsApp Share Button - Always visible when bill is saved */}
           {showWhatsApp && lastGeneratedBill && (
             <button
               style={baseStyles.whatsappButton}
@@ -3032,7 +3439,6 @@ const Bill = () => {
         </div>
       </div>
       
-      {/* Hidden download link */}
       <a ref={downloadLinkRef} style={baseStyles.downloadLink}></a>
     </div>
   );

@@ -77,12 +77,12 @@ const VisitBillPage = () => {
   
   // Company/Shop Details from Backend
   const [companyDetails, setCompanyDetails] = useState({
-    name: "Avva Inventory",
-    address: "No.71, M.T.H.road (Opp padi post office)",
-    city: "Padi, Chennai - 600 050",
-    phone: "98657 09626",
+    name: "OM Golden Buyers",
+    address: "177A, 1st floor, Papermils Road,",
+    city: "Peravallur, Chennai - 600082",
+    phone: "7845767049",
     email: "",
-    gst: "",
+    gst: "33COUPR9413J1Z8",
     logo: null,
     logoUrl: null
   });
@@ -183,12 +183,12 @@ const VisitBillPage = () => {
       } else {
         // Use default company details
         setCompanyDetails({
-          name: "Avva Inventory",
-          address: "No.71, M.T.H.road (Opp padi post office)",
-          city: "Padi, Chennai - 600 050",
-          phone: "98657 09626",
+          name: "OM Golden Buyers",
+          address: "177A, 1st floor, Papermils Road,",
+          city: "Peravallur, Chennai - 600082",
+          phone: "7845767049",
           email: "",
-          gst: "",
+          gst: "33COUPR9413J1Z8",
           logo: null,
           logoUrl: null
         });
@@ -198,12 +198,12 @@ const VisitBillPage = () => {
       showMessage("error", "❌ Failed to fetch company details");
       // Use default company details
       setCompanyDetails({
-        name: "Avva Inventory",
-        address: "No.71, M.T.H.road (Opp padi post office)",
-        city: "Padi, Chennai - 600 050",
-        phone: "93423 01582",
+        name: "OM Golden Buyers",
+        address: "177A, 1st floor, Papermils Road,",
+        city: "Peravallur, Chennai - 600082",
+        phone: "7845767049",
         email: "",
-        gst: "",
+        gst: "33COUPR9413J1Z8",
         logo: null,
         logoUrl: null
       });
@@ -221,9 +221,9 @@ const VisitBillPage = () => {
       const company = response.data;
       setCompanyDetails({
         name: company.name || "Avva Inventory",
-        address: company.address || "No.71, M.T.H.road (Opp padi post office)",
-        city: company.city || "Padi, Chennai - 600 050",
-        phone: company.phone || "93423 01582",
+        address: company.address || "177A, 1st floor, Papermils Road,",
+        city: company.city || "Peravallur, Chennai - 600082",
+        phone: company.phone || "7845767049",
         email: company.email || "",
         gst: company.gst_number || company.gst || "",
         logo: company.logo || null,
@@ -1022,7 +1022,7 @@ const VisitBillPage = () => {
         </head>
         <body>
           <div class="header">
-            <img src="/avva-logo.jpeg" class="logo" alt="Avva Inventory Logo" />
+            <img src="/avva-logo.jpeg" class="logo" alt="OM Golden Buyers Logo" />
             <h1>${companyDetails.name}</h1>
             <p>${companyDetails.address}</p>
             <p>${companyDetails.city}</p>

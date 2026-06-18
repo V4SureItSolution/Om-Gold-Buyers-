@@ -76,11 +76,11 @@ const ServiceBill = () => {
 
   
   const shopDetails = {
-    name: 'Avva Inventory',
-    phone: '+91 93423 01582',
-    address: 'No.71, M.T.H.road (Opp padi post office), Padi',
-    city: 'Chennai - 600 050',
-    gst: '33ABCDE1234F1Z5'
+    name: 'OM Golden Buyers',
+    phone: '+91 7845767049',
+    address: '177A, 1st floor, Papermils Road,',
+    city: 'Peravallur, Chennai - 600082',
+    gst: '33COUPR9413J1Z8'
   };
 
   // Refs
@@ -1494,7 +1494,7 @@ const ServiceBill = () => {
         <body>
           <div id="billPaper">
             <div class="bill-header">
-              <img src="/avva-logo.jpeg" class="bill-logo" alt="Avva Inventory Logo">
+              <img src="/avva-logo.jpeg" class="bill-logo" alt="OM Golden Buyers Logo">
               <h1>${shopDetails.name}</h1>
               <p>${shopDetails.address}</p>
               <p>${shopDetails.city}</p>
@@ -1770,7 +1770,7 @@ const ServiceBill = () => {
     const due = calculateDue();
     const activeServices = manualServices.filter(s => s.quantity > 0);
 
-    let message = `*Avva Inventory - SERVICE BILL*\n`;
+    let message = `*OM Golden Buyers - SERVICE BILL*\n`;
     message += `${shopDetails.address}\n`;
     message += `${shopDetails.city}\n`;
     message += `Ph: ${shopDetails.phone}\n`;
