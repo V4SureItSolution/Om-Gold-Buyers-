@@ -1,7 +1,342 @@
-// Bill.jsx - Updated with gold/silver bill features
+// Bill.jsx - Fixed with editable Net Wt and Gross Amt, and proper print button enabling
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
+// ================= OM GOLDEN BILL PRINT COMPONENT =================
+const OmGoldenBill = ({ 
+  bill = {},
+  shopDetails = {},
+}) => {
+  const printRef = useRef(null);
+
+  const styles = {
+    page: {
+      width: '720px',
+      margin: '0 auto',
+      background: '#fff',
+      padding: '8px',
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '11px',
+      color: '#000',
+    },
+    logoArea: {
+      textAlign: 'center',
+      padding: '10px 0 4px',
+    },
+    logoBox: {
+      display: 'inline-block',
+      border: '3px solid #8B0000',
+      background: '#8B0000',
+      padding: '6px 20px',
+    },
+    logoImage: {
+      maxWidth: '60px',
+      maxHeight: '36px',
+      marginBottom: '3px',
+      display: 'block',
+      marginLeft: 'auto',
+      marginRight: 'auto',
+    },
+    logoText: {
+      fontSize: '22px',
+      fontWeight: '900',
+      color: '#b8860b',
+      letterSpacing: '2px',
+      margin: '2px 0',
+    },
+    branchLine: {
+      fontSize: '10px',
+      fontWeight: '700',
+      textAlign: 'center',
+      margin: '4px 0',
+    },
+    outerTable: {
+      width: '100%',
+      borderCollapse: 'collapse',
+      border: '1.5px solid #000',
+      marginTop: '4px',
+    },
+    th: {
+      border: '1px solid #000',
+      padding: '3px 6px',
+      verticalAlign: 'middle',
+    },
+    td: {
+      border: '1px solid #000',
+      padding: '3px 6px',
+      verticalAlign: 'middle',
+      fontSize: '10px',
+    },
+    labelCell: {
+      border: '1px solid #000',
+      padding: '3px 6px',
+      verticalAlign: 'middle',
+      fontWeight: '700',
+      fontSize: '10px',
+      whiteSpace: 'nowrap',
+    },
+    itemsHeader: {
+      background: '#d8d8d8',
+      fontWeight: '700',
+      fontSize: '10px',
+      textAlign: 'center',
+      padding: '4px',
+      border: '1px solid #000',
+    },
+    itemsRow: {
+      fontSize: '10px',
+      textAlign: 'center',
+      padding: '4px',
+      border: '1px solid #000',
+      height: '24px',
+    },
+    summaryLabel: {
+      fontWeight: '700',
+      textAlign: 'center',
+      background: '#fff',
+      border: '1px solid #000',
+      padding: '3px 8px',
+      fontSize: '10px',
+    },
+    summaryValue: {
+      textAlign: 'center',
+      fontWeight: '700',
+      fontSize: '12px',
+      border: '1px solid #000',
+      padding: '4px',
+    },
+    bottomRow: {
+      border: '1px solid #000',
+      padding: '5px 8px',
+      fontSize: '10px',
+      fontWeight: '700',
+      textAlign: 'center',
+      verticalAlign: 'middle',
+      height: '48px',
+      width: '50%',
+    },
+  };
+
+  // Use default values if bill data is not provided
+  const billData = {
+    customerId: bill.customerId || '0033',
+    dateTime: bill.dateTime || '23-02-2026 10:40:00',
+    customerName: bill.customerName || 'SHOBANA',
+    billId: bill.billId || '954454',
+    contact: bill.contact || '9790835880',
+    goldPrice: bill.goldPrice || '13900',
+    address: bill.address || 'S14 PHASE 1 JAINS AASHIYANA FLATS VEMBULI AMMAN KOVIL STREET KALAIGNAR KARUNANIDHI NAGAR, CHENNAI 600078',
+    idProof: bill.idProof || '691706578736',
+    addressProof: bill.addressProof || '691706578736',
+    items: bill.items || [{ ornamentType: 'BANGLES 3', code: '', grossWeight: 37.7, stoneWax: 0.5, netWeight: 37.2, purity: 91, grossAmount: 517000 }],
+    grandTotal: bill.grandTotal || { grossWeight: 37.7, stoneWax: 0.5, netWeight: 37.2, purity: '91%', grossAmount: 517000 },
+    grossAmount: bill.grossAmount || 517000,
+    margin: bill.margin || 0,
+    netAmount: bill.netAmount || 517000,
+    release: bill.release || 'RELEASE',
+    amountPaid: bill.amountPaid || 517000,
+    amountInWords: bill.amountInWords || 'FIVE LAKH SEVENTEEN THOUSAND RUPEES ONLY (CASH PAID)',
+  };
+
+  const shopData = {
+    branch: shopDetails.branch || 'Chennai - Peravallur, Perambur',
+    contact: shopDetails.contact || '8189920414',
+    gst: shopDetails.gst || '33COUPR9413J1Z8',
+    address: shopDetails.address || '177A papermills road, peravallur, chennai 600082',
+  };
+
+  const EMPTY_ROWS = 4;
+
+  return (
+    <div>
+      <div ref={printRef}>
+        <div style={styles.page}>
+          {/* LOGO */}
+          <div style={styles.logoArea}>
+            <div style={styles.logoBox}>
+              <img 
+                src="/m3-logo.png" 
+                alt="OM Golden Buyers Logo" 
+                style={styles.logoImage}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                }}
+              />
+              <div style={styles.logoText}>OM GOLDEN BUYERS</div>
+            </div>
+          </div>
+
+          {/* BRANCH LINE */}
+          <div style={styles.branchLine}>
+            BRANCH : {shopData.branch} , CONTACT: {shopData.contact} , GST NO: {shopData.gst}
+          </div>
+
+          {/* CUSTOMER DETAILS TABLE */}
+          <table style={styles.outerTable}>
+            <tbody>
+              <tr>
+                <td colSpan={6} style={{ ...styles.td, fontWeight: '700', textAlign: 'center' }}>
+                  ADDRESS : No.&nbsp;&nbsp;&nbsp; {shopData.address}
+                </td>
+              </tr>
+              <tr>
+                <td style={styles.labelCell}>CUSTOMER ID</td>
+                <td style={styles.td}>{billData.customerId}</td>
+                <td style={styles.labelCell}>DATE / TIME</td>
+                <td style={styles.td}>{billData.dateTime}</td>
+                <td rowSpan={3} colSpan={2} style={{ ...styles.td, textAlign: 'center', width: '72px', padding: '4px' }}>
+                  <div style={{ width: '66px', height: '72px', background: '#a08060', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '2px auto' }}>
+                    <svg width="60" height="68" viewBox="0 0 60 68">
+                      <rect width="60" height="68" fill="#a08060" />
+                      <ellipse cx="30" cy="22" rx="14" ry="16" fill="#c8a070" />
+                      <ellipse cx="30" cy="60" rx="22" ry="18" fill="#c8a070" />
+                    </svg>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style={styles.labelCell}>CUSTOMER NAME</td>
+                <td style={styles.td}>{billData.customerName}</td>
+                <td style={styles.labelCell}>BILL ID</td>
+                <td style={styles.td}>{billData.billId}</td>
+              </tr>
+              <tr>
+                <td style={styles.labelCell}>CONTACT</td>
+                <td style={styles.td}>{billData.contact}</td>
+                <td style={styles.labelCell}>GOLD PRICE</td>
+                <td style={styles.td}>{billData.goldPrice}</td>
+              </tr>
+              <tr>
+                <td colSpan={2} rowSpan={2} style={{ ...styles.td, fontSize: '9px', fontWeight: '600', verticalAlign: 'top' }}>
+                  ADDRESS :{billData.address}
+                </td>
+                <td style={styles.labelCell}>ID PROOF</td>
+                <td colSpan={3} style={styles.td}>{billData.idProof}</td>
+              </tr>
+              <tr>
+                <td style={styles.labelCell}>ADDRESS PROOF</td>
+                <td colSpan={3} style={styles.td}>{billData.addressProof}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* ITEMS TABLE */}
+          <table style={{ ...styles.outerTable, borderTop: 'none', marginTop: 0 }}>
+            <thead>
+              <tr>
+                {['ORNAMENT TYPE', 'CODE', 'GROSS WEIGHT', 'STONE / WAX', 'NET WEIGHT', 'PURITY', 'GROSS AMOUNT'].map(h => (
+                  <th key={h} style={styles.itemsHeader}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {billData.items.map((item, i) => (
+                <tr key={i}>
+                  <td style={styles.itemsRow}>{item.ornamentType}</td>
+                  <td style={styles.itemsRow}>{item.code || ''}</td>
+                  <td style={styles.itemsRow}>{item.grossWeight}</td>
+                  <td style={styles.itemsRow}>{item.stoneWax}</td>
+                  <td style={styles.itemsRow}>{item.netWeight}</td>
+                  <td style={styles.itemsRow}>{item.purity}</td>
+                  <td style={styles.itemsRow}>{Number(item.grossAmount).toLocaleString('en-IN')}</td>
+                </tr>
+              ))}
+              {Array.from({ length: Math.max(0, EMPTY_ROWS - billData.items.length + 1) }).map((_, i) => (
+                <tr key={`empty-${i}`} style={{ height: '28px' }}>
+                  {Array.from({ length: 7 }).map((__, j) => (
+                    <td key={j} style={{ border: '1px solid #000', height: '28px' }}></td>
+                  ))}
+                </tr>
+              ))}
+              <tr>
+                <td colSpan={2} style={{ ...styles.itemsRow, fontWeight: '700', textAlign: 'center' }}>GRAND TOTAL</td>
+                <td style={{ ...styles.itemsRow, fontWeight: '700' }}>{billData.grandTotal.grossWeight}</td>
+                <td style={{ ...styles.itemsRow, fontWeight: '700' }}>{billData.grandTotal.stoneWax}</td>
+                <td style={{ ...styles.itemsRow, fontWeight: '700' }}>{billData.grandTotal.netWeight}</td>
+                <td style={{ ...styles.itemsRow, fontWeight: '700' }}>{billData.grandTotal.purity}</td>
+                <td style={{ ...styles.itemsRow, fontWeight: '700' }}>{Number(billData.grandTotal.grossAmount).toLocaleString('en-IN')}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* TERMS + SUMMARY */}
+          <table style={{ ...styles.outerTable, borderTop: 'none', marginTop: 0 }}>
+            <tbody>
+              <tr>
+                {/* TERMS */}
+                <td style={{ width: '58%', padding: '5px 6px', verticalAlign: 'top', border: '1px solid #000' }}>
+                  <div style={{ fontWeight: '700', fontSize: '10px', textAlign: 'center', marginBottom: '3px' }}>TERMS &amp; CONDITIONS</div>
+                  <div style={{ fontSize: '9px', lineHeight: '1.45' }}>
+                    1. Ornaments once purchased shall not be returned under any circumstances.<br />
+                    2. If Any losses are arising out of this purchase, then you are liable to settle full amount.<br />
+                    3. Selling stolen gold,silver or fake gold is a criminal offence, if found will be reported to authorities.<br />
+                    4. Ornaments were purchased from you based on the declaration that you hold the ownership and saleable title on the ornaments and you completely agree to indemnity OM GOLDEN and it's employees from any further claim arising out of dispute or due to any criminal liabilities framed against you.<br />
+                    5. Kindly ensure the correctness of cash before leaving the counter, No claims for shortfall will be entertained thereafter.
+                  </div>
+                  <div style={{ fontWeight: '700', fontSize: '10px', textAlign: 'center', margin: '5px 0 2px' }}>விதிமுறை மற்றும் நிபந்தனைகள்</div>
+                  <div style={{ fontSize: '9px', lineHeight: '1.45' }}>
+                    1. ஒருமுறை வாங்கிய ஆபரணங்களை எந்தகுழ்நிலையிலும் திரும்பக் கொடுக்கபடாது<br />
+                    2. இந்த வாங்கதலில் ஏதேனும் இழப்புகள் ஏற்பட்டால்,நீங்கள் முழுத்தொகையையும் செலுத்த வேண்டும்<br />
+                    3. திருடப்பட்ட தங்கம் வெள்ளி அல்லது போலி தங்க விற்பனை செய்வது கிரியினல் குற்றமாகும். அது கண்டுபிடிக்கப்பட்டால் அதிகாரிகளுக்கு தெரிவிக்கப்படும்.<br />
+                    4. ஆபரணங்கள் மீதான உரிமை மற்றும் விற்பனை தலைப்பை நீங்கள் வைத்திருக்கிறீர்கள் என்ற அறிவிப்பின் அடிப்படையில் உங்களிடமிருந்து ஆபரணங்கள் வாங்கப்பட்டன<br />
+                    5. கவுண்டரை விட்டு வெளியேறும் முன் பணத்தின் சரியான தன்மையை உறுதி செய்து கொள்ளுங்கள்
+                  </div>
+                </td>
+                {/* SUMMARY */}
+                <td style={{ width: '42%', verticalAlign: 'top', border: '1px solid #000', padding: 0 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <tbody>
+                      {[
+                        { label: 'GROSS AMOUNT', value: Number(billData.grossAmount).toLocaleString('en-IN') },
+                        { label: 'MARGIN', value: billData.margin || 0 },
+                        { label: 'NET AMOUNT', value: Number(billData.netAmount).toLocaleString('en-IN') },
+                        { label: 'RELEASE', value: billData.release || '' },
+                        { label: 'AMOUNT PAID', value: Number(billData.amountPaid).toLocaleString('en-IN') },
+                      ].map(({ label, value }) => (
+                        <React.Fragment key={label}>
+                          <tr>
+                            <td colSpan={2} style={styles.summaryLabel}>{label}</td>
+                          </tr>
+                          <tr>
+                            <td colSpan={2} style={{ ...styles.summaryValue, minHeight: '28px' }}>{value}</td>
+                          </tr>
+                        </React.Fragment>
+                      ))}
+                      <tr><td colSpan={2} style={{ border: '1px solid #000', height: '28px' }}></td></tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* THUMB + SIGNATURE */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: '1.5px solid #000', borderTop: 'none' }}>
+            <tbody>
+              <tr>
+                <td style={styles.bottomRow}>THUMB IMPRESSION</td>
+                <td style={styles.bottomRow}>CUSTOMER SIGNATURE</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* AMOUNT IN WORDS */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', border: '1.5px solid #000', borderTop: 'none' }}>
+            <tbody>
+              <tr>
+                <td style={{ border: '1px solid #000', padding: '4px 8px', fontSize: '10px', fontWeight: '700', textAlign: 'center' }}>
+                  AMOUNT IN WORDS : {billData.amountInWords}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ================= MAIN BILL COMPONENT =================
 const Bill = () => {
   // ================= EXISTING STATE MANAGEMENT =================
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,30 +354,35 @@ const Bill = () => {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerGST, setCustomerGST] = useState('');
-  const [customerAddress, setCustomerAddress] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('S14 PHASE 1 JAINS AASHIYANA FLATS VEMBULI AMMAN KOVIL STREET KALAIGNAR KARUNANIDHI NAGAR, CHENNAI 600078');
   const [customerType, setCustomerType] = useState('external');
   const [customerDiscount, setCustomerDiscount] = useState(0);
   
   // ================= NEW GOLD/SILVER STATE =================
-  // Bill Information - New fields
   const [billDate, setBillDate] = useState('');
-  const [goldRate, setGoldRate] = useState(0);
+  const [goldRate, setGoldRate] = useState(13900);
   const [silverRate, setSilverRate] = useState(0);
-  
-  // Customer Details - New fields
-  const [customerAlternateContact, setCustomerAlternateContact] = useState('');
-  const [previousBillsCount, setPreviousBillsCount] = useState(0);
-  const [grade, setGrade] = useState('');
-  const [remarks, setRemarks] = useState('');
+  const [customerId, setCustomerId] = useState('0033');
+  const [billId, setBillId] = useState('954454');
+  const [customerContact, setCustomerContact] = useState('9790835880');
+  const [idProof, setIdProof] = useState('691706578736');
+  const [addressProof, setAddressProof] = useState('691706578736');
+  const [grandTotalWeight, setGrandTotalWeight] = useState(0);
+  const [grandTotalStoneWax, setGrandTotalStoneWax] = useState(0);
+  const [grandTotalNetWeight, setGrandTotalNetWeight] = useState(0);
+  const [grandTotalPurity, setGrandTotalPurity] = useState('0%');
+  const [grandTotalAmount, setGrandTotalAmount] = useState(0);
   
   // Item Details - New gold/silver items
   const [itemType, setItemType] = useState('gold');
   const [goldSilverItems, setGoldSilverItems] = useState([]);
   const [currentGoldSilverItem, setCurrentGoldSilverItem] = useState({
     itemName: '',
+    code: '',
     grossWeight: 0,
     stoneWeight: 0,
     netWeight: 0,
+    purity: 91,
     margin: 0,
     grossAmount: 0,
     netAmount: 0,
@@ -57,20 +397,21 @@ const Bill = () => {
   const [paymentMode, setPaymentMode] = useState('cash');
   const [amountPaid, setAmountPaid] = useState(0);
   const [bankPendingAmount, setBankPendingAmount] = useState(0);
+  const [amountInWords, setAmountInWords] = useState('ZERO RUPEES ONLY');
   
   // Pledge Information
-  const [pledgeOption, setPledgeOption] = useState('');
-  const [releaseSource, setReleaseSource] = useState('');
-  const [showReleaseSource, setShowReleaseSource] = useState(false);
+  const [pledgeOption, setPledgeOption] = useState('physical');
+  const [releaseSource, setReleaseSource] = useState('RELEASE');
+  const [showReleaseSource, setShowReleaseSource] = useState(true);
   
   // Verification Documents
-  const [idProof, setIdProof] = useState('');
-  const [addressProof, setAddressProof] = useState('');
+  const [idProofType, setIdProofType] = useState('ID PROOF');
+  const [addressProofType, setAddressProofType] = useState('ADDRESS PROOF');
   const [pledgeCopy, setPledgeCopy] = useState('');
   const [receipt, setReceipt] = useState('');
   
   // Declaration
-  const [declarationAccepted, setDeclarationAccepted] = useState(false);
+  const [declarationAccepted, setDeclarationAccepted] = useState(true);
   
   // ================= EXISTING STATE (continued) =================
   const [vehicleName, setVehicleName] = useState('');
@@ -113,19 +454,22 @@ const Bill = () => {
   const [showWhatsApp, setShowWhatsApp] = useState(false);
   const [savedBillId, setSavedBillId] = useState(null);
   const [fetchingCustomer, setFetchingCustomer] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
 
   const defaultShopDetails = {
     name: 'OM Golden Buyers',
-    address: '177A, 1st floor, Papermils Road,',
-    city: ' Peravallur, Chennai - 600082',
-    phone: '7845767049',
+    address: '177A papermills road, peravallur, chennai 600082',
+    city: 'Chennai - Peravallur, Perambur',
+    phone: '8189920414',
     gst: '33COUPR9413J1Z8',
+    branch: 'Chennai - Peravallur, Perambur',
   };
 
   const [shopDetails, setShopDetails] = useState(defaultShopDetails);
 
   const billPaperRef = useRef(null);
   const downloadLinkRef = useRef(null);
+  const printModalRef = useRef(null);
 
   // ================= API SETUP =================
   const api = axios.create({
@@ -774,7 +1118,6 @@ const Bill = () => {
     companyOptionHover: {
       background: '#f0f7ff',
     },
-    // ================= NEW STYLES FOR GOLD/SILVER =================
     goldSilverSection: {
       background: '#f8f9fa',
       padding: '15px',
@@ -804,20 +1147,20 @@ const Bill = () => {
     },
     goldSilverItemRow: {
       display: 'grid',
-      gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 1fr 1fr auto',
-      gap: '8px',
+      gridTemplateColumns: '1.2fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 1fr auto',
+      gap: '6px',
       alignItems: 'center',
-      marginBottom: '8px',
+      marginBottom: '6px',
     },
     goldSilverItemHeader: {
       display: 'grid',
-      gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 1fr 1fr auto',
-      gap: '8px',
+      gridTemplateColumns: '1.2fr 0.8fr 0.8fr 0.8fr 0.8fr 0.8fr 1fr auto',
+      gap: '6px',
       alignItems: 'center',
       fontWeight: 'bold',
-      fontSize: '11px',
+      fontSize: '9px',
       color: '#555',
-      padding: '8px 0',
+      padding: '6px 0',
       borderBottom: '2px solid #ddd',
     },
     goldSilverTotals: {
@@ -845,7 +1188,7 @@ const Bill = () => {
       padding: '4px 6px',
       border: '1px solid #ddd',
       borderRadius: '3px',
-      fontSize: '12px',
+      fontSize: '11px',
       fontFamily: "'Courier New', monospace",
     },
     readOnlyInput: {
@@ -853,7 +1196,7 @@ const Bill = () => {
       padding: '4px 6px',
       border: '1px solid #e9ecef',
       borderRadius: '3px',
-      fontSize: '12px',
+      fontSize: '11px',
       fontFamily: "'Courier New', monospace",
       background: '#f8f9fa',
       color: '#666',
@@ -878,6 +1221,51 @@ const Bill = () => {
       background: '#f8f9fa',
       borderRadius: '5px',
       border: '1px solid #e9ecef',
+    },
+    printModalOverlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.7)',
+      zIndex: 9999,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    printModalContent: {
+      background: 'white',
+      borderRadius: '10px',
+      padding: '20px',
+      maxWidth: '90%',
+      maxHeight: '90vh',
+      overflow: 'auto',
+      position: 'relative',
+    },
+    printModalClose: {
+      position: 'absolute',
+      top: '10px',
+      right: '10px',
+      background: '#dc3545',
+      color: 'white',
+      border: 'none',
+      borderRadius: '50%',
+      width: '30px',
+      height: '30px',
+      cursor: 'pointer',
+      fontSize: '18px',
+    },
+    printModalButton: {
+      padding: '10px 30px',
+      background: '#8B0000',
+      color: 'white',
+      border: 'none',
+      borderRadius: '4px',
+      fontWeight: '700',
+      fontSize: '13px',
+      cursor: 'pointer',
+      marginTop: '10px',
     },
   };
 
@@ -905,19 +1293,20 @@ const Bill = () => {
   }, []);
 
   // ================= NEW EFFECTS FOR GOLD/SILVER =================
-  // Initialize bill date
   useEffect(() => {
     setBillDate(new Date().toISOString().split('T')[0]);
   }, []);
 
-  // Calculate gold/silver item values when current item changes
+  // Calculate gold/silver item values - UPDATED to allow manual entry
   useEffect(() => {
     const grossWeight = parseFloat(currentGoldSilverItem.grossWeight) || 0;
     const stoneWeight = parseFloat(currentGoldSilverItem.stoneWeight) || 0;
-    const netWeight = Math.max(0, grossWeight - stoneWeight);
+    // Only auto-calculate net weight if it's not manually entered
+    const netWeight = parseFloat(currentGoldSilverItem.netWeight) || (grossWeight - stoneWeight);
     const margin = parseFloat(currentGoldSilverItem.margin) || 0;
     const rate = itemType === 'gold' ? goldRate : silverRate;
-    const grossAmount = netWeight * rate;
+    const purity = parseFloat(currentGoldSilverItem.purity) || 91;
+    const grossAmount = netWeight * rate * (purity / 100);
     const netAmount = Math.max(0, grossAmount - margin);
     
     setCurrentGoldSilverItem(prev => ({
@@ -927,24 +1316,50 @@ const Bill = () => {
       netAmount: parseFloat(netAmount.toFixed(2)),
     }));
   }, [currentGoldSilverItem.grossWeight, currentGoldSilverItem.stoneWeight, 
-      currentGoldSilverItem.margin, goldRate, silverRate, itemType]);
+      currentGoldSilverItem.margin, currentGoldSilverItem.purity,
+      goldRate, silverRate, itemType]);
 
   // Calculate totals when gold/silver items change
   useEffect(() => {
     let grossTotal = 0;
     let deductionsTotal = 0;
+    let totalGrossWeight = 0;
+    let totalStoneWeight = 0;
+    let totalNetWeight = 0;
+    let totalPurity = 0;
     
     goldSilverItems.forEach(item => {
       grossTotal += item.grossAmount || 0;
       deductionsTotal += item.margin || 0;
+      totalGrossWeight += item.grossWeight || 0;
+      totalStoneWeight += item.stoneWeight || 0;
+      totalNetWeight += item.netWeight || 0;
+      totalPurity += item.purity || 0;
     });
     
     setGrossAmountTotal(grossTotal);
     setTotalDeductions(deductionsTotal);
     setNetPayableAmount(grossTotal - deductionsTotal);
+    setGrandTotalWeight(totalGrossWeight);
+    setGrandTotalStoneWax(totalStoneWeight);
+    setGrandTotalNetWeight(totalNetWeight);
+    if (goldSilverItems.length > 0) {
+      setGrandTotalPurity((totalPurity / goldSilverItems.length) + '%');
+    } else {
+      setGrandTotalPurity('0%');
+    }
+    setGrandTotalAmount(grossTotal - deductionsTotal);
+    setAmountPaid(grossTotal - deductionsTotal);
+    
+    // Update amount in words
+    const amount = grossTotal - deductionsTotal;
+    if (amount > 0) {
+      setAmountInWords(`${amount.toLocaleString('en-IN')} RUPEES ONLY`);
+    } else {
+      setAmountInWords('ZERO RUPEES ONLY');
+    }
   }, [goldSilverItems]);
 
-  // Handle pledge option change
   useEffect(() => {
     if (pledgeOption === 'physical') {
       setShowReleaseSource(true);
@@ -979,8 +1394,9 @@ const Bill = () => {
           name: company.name || defaultShopDetails.name,
           address: company.address || defaultShopDetails.address,
           city: company.city || defaultShopDetails.city,
-          phone: company.phone || '',
-          gst: company.gst_number || '',
+          phone: company.phone || defaultShopDetails.phone,
+          gst: company.gst_number || defaultShopDetails.gst,
+          branch: company.branch || defaultShopDetails.branch,
         });
       }
     } catch (err) {
@@ -1409,6 +1825,11 @@ const Bill = () => {
       return;
     }
     
+    if (currentGoldSilverItem.netWeight <= 0) {
+      setError('Please enter valid net weight');
+      return;
+    }
+    
     setGoldSilverItems([...goldSilverItems, { 
       ...currentGoldSilverItem, 
       id: Date.now() 
@@ -1416,9 +1837,11 @@ const Bill = () => {
     
     setCurrentGoldSilverItem({
       itemName: '',
+      code: '',
       grossWeight: 0,
       stoneWeight: 0,
       netWeight: 0,
+      purity: 91,
       margin: 0,
       grossAmount: 0,
       netAmount: 0,
@@ -1435,6 +1858,13 @@ const Bill = () => {
     setCurrentGoldSilverItem(prev => ({
       ...prev,
       [field]: parseFloat(value) || 0
+    }));
+  };
+
+  const updateGoldSilverItemString = (field, value) => {
+    setCurrentGoldSilverItem(prev => ({
+      ...prev,
+      [field]: value
     }));
   };
 
@@ -1575,7 +2005,6 @@ const Bill = () => {
     setError('');
 
     try {
-      // Prepare bill data with both product items and gold/silver items
       const billData = {
         customerName: customerName,
         customerPhone: customerPhone,
@@ -1598,20 +2027,21 @@ const Bill = () => {
           productId: p.id,
           quantity: p.quantity
         })),
-        // NEW: Gold/Silver bill data
         billDate: billDate,
         goldRate: goldRate,
         silverRate: silverRate,
-        customerAlternateContact: customerAlternateContact,
-        previousBillsCount: previousBillsCount,
-        grade: grade,
-        remarks: remarks,
+        customerAlternateContact: customerContact,
+        previousBillsCount: 0,
+        grade: '',
+        remarks: '',
         itemType: itemType,
         goldSilverItems: goldSilverItems.map(item => ({
           itemName: item.itemName,
+          code: item.code || '',
           grossWeight: item.grossWeight,
           stoneWeight: item.stoneWeight,
           netWeight: item.netWeight,
+          purity: item.purity,
           margin: item.margin,
           grossAmount: item.grossAmount,
           netAmount: item.netAmount,
@@ -1629,6 +2059,9 @@ const Bill = () => {
         pledgeCopy: pledgeCopy,
         receipt: receipt,
         declarationAccepted: declarationAccepted,
+        customerId: customerId,
+        billId: billId,
+        amountInWords: amountInWords,
       };
 
       console.log('Saving bill with gold/silver items:', billData);
@@ -1663,10 +2096,63 @@ const Bill = () => {
     }
   };
 
-  // ================= EXISTING UI FUNCTIONS =================
+  // ================= UPDATED PRINT FUNCTION =================
+  const handlePrint = async () => {
+    const subtotal = calculateSubtotal();
+    if (subtotal === 0 && goldSilverItems.length === 0) {
+      setError('No items to print!');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    const savedData = await saveBillToDatabase();
+    
+    if (savedData) {
+      setShowPrintModal(true);
+    }
+  };
+
+  // ================= DOWNLOAD BILL FUNCTION =================
+  const downloadBill = () => {
+    const subtotal = calculateSubtotal();
+    if (subtotal === 0 && goldSilverItems.length === 0) {
+      setError('No items to download!');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    const billHTML = generateBillHTML();
+    const blob = new Blob([billHTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Bill_${billNumber.replace(/[\/\\]/g, '-')}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setSuccess('Bill downloaded successfully!');
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const handlePaymentComplete = async () => {
+    const subtotal = calculateSubtotal();
+    if (subtotal === 0 && goldSilverItems.length === 0) {
+      setError('No items in bill!');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
+    const savedData = await saveBillToDatabase();
+    
+    if (savedData) {
+      downloadBill();
+    }
+  };
+
+  // ================= LEGACY GENERATE BILL HTML (preserved) =================
   const generateBillHTML = () => {
-    // ... (existing generateBillHTML function - preserved)
-    // This function remains unchanged
     const subtotal = calculateSubtotal();
     const discountAmount = calculateDiscountAmount();
     const taxAmount = calculateTaxAmount();
@@ -2124,255 +2610,6 @@ const Bill = () => {
     `;
   };
 
-  const downloadBill = () => {
-    const subtotal = calculateSubtotal();
-    if (subtotal === 0 && goldSilverItems.length === 0) {
-      setError('No items to download!');
-      setTimeout(() => setError(''), 3000);
-      return;
-    }
-
-    const billHTML = generateBillHTML();
-    const blob = new Blob([billHTML], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Bill_${billNumber.replace(/[\/\\]/g, '-')}.html`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    setSuccess('Bill downloaded successfully!');
-    setTimeout(() => setSuccess(''), 3000);
-  };
-
-  const handlePaymentComplete = async () => {
-    const subtotal = calculateSubtotal();
-    if (subtotal === 0 && goldSilverItems.length === 0) {
-      setError('No items in bill!');
-      setTimeout(() => setError(''), 3000);
-      return;
-    }
-
-    const savedData = await saveBillToDatabase();
-    
-    if (savedData) {
-      downloadBill();
-    }
-  };
-
-  const handlePrint = async () => {
-    const subtotal = calculateSubtotal();
-    if (subtotal === 0 && goldSilverItems.length === 0) {
-      setError('No items to print!');
-      setTimeout(() => setError(''), 3000);
-      return;
-    }
-
-    const savedData = await saveBillToDatabase();
-    
-    if (savedData) {
-      const billContent = billPaperRef.current.outerHTML;
-      
-      const printWindow = window.open('', '_blank');
-      
-      if (printWindow) {
-        printWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>Bill - ${billNumber}</title>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <style>
-                * {
-                  margin: 0;
-                  padding: 0;
-                  box-sizing: border-box;
-                  border: none;
-                  background: none;
-                  box-shadow: none;
-                  outline: none;
-                }
-                
-                body {
-                  margin: 0;
-                  padding: 0;
-                  width: 80mm;
-                  font-family: 'Courier New', monospace;
-                  font-size: 11px;
-                  line-height: 1.3;
-                  background: white;
-                }
-                
-                #billPaper {
-                  width: 280px;
-                  margin: 0 auto;
-                  padding: 12px;
-                  background: white;
-                  border: none;
-                }
-                
-                .bill-header {
-                  text-align: center;
-                  margin-bottom: 12px;
-                  padding-bottom: 8px;
-                  border-bottom: 1px dashed #000 !important;
-                }
-                
-                .bill-info {
-                  margin: 10px 0;
-                  padding: 6px 0;
-                  border-top: 1px dashed #000 !important;
-                  border-bottom: 1px dashed #000 !important;
-                }
-                
-                .customer-section {
-                  margin: 10px 0;
-                  padding: 6px;
-                  border: 1px solid #ddd !important;
-                }
-                
-                .customer-row {
-                  display: flex;
-                  justify-content: space-between;
-                  margin-bottom: 3px;
-                  font-size: 10px;
-                }
-                
-                .customer-type-badge {
-                  padding: 2px 6px;
-                  border-radius: 3px;
-                  font-size: 9px;
-                  font-weight: bold;
-                }
-                
-                .internal-badge {
-                  background: #cce5ff !important;
-                  color: #004085 !important;
-                }
-                
-                .external-badge {
-                  background: #fff3cd !important;
-                  color: #856404 !important;
-                }
-                
-                .vehicle-section {
-                  margin: 8px 0;
-                  padding: 6px;
-                  border: 1px solid #ddd !important;
-                }
-                
-                .vehicle-row {
-                  display: flex;
-                  justify-content: space-between;
-                  margin-bottom: 4px;
-                  font-size: 10px;
-                }
-                
-                .bill-items-header {
-                  display: grid;
-                  grid-template-columns: 2fr 1fr 1fr 1.5fr;
-                  font-weight: bold;
-                  padding: 4px 0;
-                  border-bottom: 1px solid #000 !important;
-                  font-size: 10px;
-                }
-                
-                .bill-item {
-                  display: grid;
-                  grid-template-columns: 2fr 1fr 1fr 1.5fr;
-                  padding: 3px 0;
-                  border-bottom: 1px dotted #000 !important;
-                  font-size: 9px;
-                }
-                
-                .bill-summary {
-                  margin: 10px 0;
-                  padding: 8px 0;
-                  border-top: 1px solid #000 !important;
-                }
-                
-                .summary-row {
-                  display: flex;
-                  justify-content: space-between;
-                  margin-bottom: 3px;
-                  font-size: 10px;
-                }
-                
-                .summary-row-total {
-                  font-weight: bold;
-                  font-size: 12px;
-                  border-top: 1px dashed #000 !important;
-                  padding-top: 6px;
-                  margin-top: 6px;
-                }
-                
-                .bill-footer {
-                  text-align: center;
-                  margin-top: 15px;
-                  padding-top: 10px;
-                  border-top: 1px dashed #000 !important;
-                  font-size: 8px;
-                }
-                
-                .created-by {
-                  margin-top: 8px;
-                  padding-top: 5px;
-                  border-top: 1px dotted #000 !important;
-                  font-size: 8px;
-                  text-align: center;
-                }
-                
-                input, select, button, textarea {
-                  display: none !important;
-                }
-                
-                .payment-section {
-                  display: none !important;
-                }
-                
-                .discount-section {
-                  display: none !important;
-                }
-                
-                * {
-                  background: white !important;
-                  color: black !important;
-                  -webkit-print-color-adjust: exact;
-                  print-color-adjust: exact;
-                }
-                
-                @page {
-                  size: 80mm auto;
-                  margin: 0;
-                }
-              </style>
-            </head>
-            <body>
-              ${billContent}
-              <script>
-                window.onload = function() {
-                  setTimeout(function() {
-                    window.print();
-                    setTimeout(function() {
-                      window.close();
-                    }, 500);
-                  }, 300);
-                };
-              <\/script>
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-      } else {
-        setError('Pop-up blocked! Please allow pop-ups for this site to print.');
-        setTimeout(() => setError(''), 3000);
-      }
-    }
-  };
-
   const handleWhatsAppShare = () => {
     if (!customerPhone) {
       setError('Please enter customer phone number to share via WhatsApp');
@@ -2408,7 +2645,6 @@ const Bill = () => {
     if (vehicleName) message += `Vehicle: ${vehicleName}\n`;
     if (vehicleNumber) message += `Vehicle No: ${vehicleNumber}\n`;
     
-    // Add gold/silver items to message
     if (goldSilverItems.length > 0) {
       message += `\n--- GOLD/SILVER ITEMS ---\n`;
       goldSilverItems.forEach(item => {
@@ -2419,7 +2655,6 @@ const Bill = () => {
       message += `Net Payable: ₹${netPayableAmount.toFixed(2)}\n`;
     }
     
-    // Add product items
     if (activeProducts.length > 0) {
       message += `\n--- PRODUCT ITEMS ---\n`;
       activeProducts.forEach(p => {
@@ -2431,7 +2666,6 @@ const Bill = () => {
       message += `Total: ₹${total.toFixed(2)}\n`;
     }
     
-    // Combined total if both types exist
     if (activeProducts.length > 0 && goldSilverItems.length > 0) {
       const combinedTotal = total + netPayableAmount;
       message += `\n*GRAND TOTAL: ₹${combinedTotal.toFixed(2)}*\n`;
@@ -2462,7 +2696,7 @@ const Bill = () => {
       setCustomerPhone('');
       setCustomerEmail('');
       setCustomerGST('');
-      setCustomerAddress('');
+      setCustomerAddress('S14 PHASE 1 JAINS AASHIYANA FLATS VEMBULI AMMAN KOVIL STREET KALAIGNAR KARUNANIDHI NAGAR, CHENNAI 600078');
       setCustomerType('external');
       setCustomerDiscount(0);
       setVehicleName('');
@@ -2482,23 +2716,28 @@ const Bill = () => {
       setTransactionId('');
       setBankName('');
       setChequeNumber('');
-      // Clear new fields
-      setGoldRate(0);
+      setGoldRate(13900);
       setSilverRate(0);
-      setCustomerAlternateContact('');
-      setPreviousBillsCount(0);
-      setGrade('');
-      setRemarks('');
+      setCustomerContact('');
       setAmountPaid(0);
       setBankPendingAmount(0);
-      setPledgeOption('');
-      setReleaseSource('');
-      setShowReleaseSource(false);
-      setIdProof('');
-      setAddressProof('');
+      setPledgeOption('physical');
+      setReleaseSource('RELEASE');
+      setShowReleaseSource(true);
+      setIdProof('691706578736');
+      setAddressProof('691706578736');
       setPledgeCopy('');
       setReceipt('');
-      setDeclarationAccepted(false);
+      setDeclarationAccepted(true);
+      setAmountInWords('ZERO RUPEES ONLY');
+      setGrossAmountTotal(0);
+      setTotalDeductions(0);
+      setNetPayableAmount(0);
+      setGrandTotalWeight(0);
+      setGrandTotalStoneWax(0);
+      setGrandTotalNetWeight(0);
+      setGrandTotalPurity('0%');
+      setGrandTotalAmount(0);
       setError('');
       setSuccess('');
       setBillSaved(false);
@@ -2576,6 +2815,68 @@ const Bill = () => {
       setCustomerPhone(value);
     }
   };
+
+  // Prepare bill data for the print modal - ALL DATA IS DYNAMIC FROM FORM
+  const getBillDataForPrint = () => {
+    // Map gold/silver items to the format expected by OmGoldenBill
+    const items = goldSilverItems.length > 0 
+      ? goldSilverItems.map(item => ({
+          ornamentType: item.itemName || '',
+          code: item.code || '',
+          grossWeight: item.grossWeight || 0,
+          stoneWax: item.stoneWeight || 0,
+          netWeight: item.netWeight || 0,
+          purity: item.purity || 91,
+          grossAmount: Math.round(item.grossAmount) || 0,
+        }))
+      : [{ 
+          ornamentType: '', 
+          code: '', 
+          grossWeight: 0, 
+          stoneWax: 0, 
+          netWeight: 0, 
+          purity: 0, 
+          grossAmount: 0 
+        }];
+
+    return {
+      customerId: customerId || '0033',
+      dateTime: `${currentDate} ${currentTime}`,
+      customerName: customerName || 'Walk-in Customer',
+      billId: billId || '954454',
+      contact: customerContact || customerPhone || '9790835880',
+      goldPrice: goldRate.toString() || '13900',
+      address: customerAddress || 'S14 PHASE 1 JAINS AASHIYANA FLATS VEMBULI AMMAN KOVIL STREET KALAIGNAR KARUNANIDHI NAGAR, CHENNAI 600078',
+      idProof: idProof || '691706578736',
+      addressProof: addressProof || '691706578736',
+      items: items,
+      grandTotal: {
+        grossWeight: grandTotalWeight || 0,
+        stoneWax: grandTotalStoneWax || 0,
+        netWeight: grandTotalNetWeight || 0,
+        purity: grandTotalPurity || '0%',
+        grossAmount: grandTotalAmount || 0,
+      },
+      grossAmount: grossAmountTotal || 0,
+      margin: totalDeductions || 0,
+      netAmount: netPayableAmount || 0,
+      release: releaseSource || 'RELEASE',
+      amountPaid: amountPaid || 0,
+      amountInWords: amountInWords || 'ZERO RUPEES ONLY',
+    };
+  };
+
+  const getShopDataForPrint = () => {
+    return {
+      branch: shopDetails.branch || 'Chennai - Peravallur, Perambur',
+      contact: shopDetails.phone || '8189920414',
+      gst: shopDetails.gst || '33COUPR9413J1Z8',
+      address: shopDetails.address || '177A papermills road, peravallur, chennai 600082',
+    };
+  };
+
+  // Check if there are any items to print
+  const hasItemsToPrint = activeProducts.length > 0 || goldSilverItems.length > 0;
 
   return (
     <div style={baseStyles.container}>
@@ -2720,24 +3021,50 @@ const Bill = () => {
 
           {/* Rates Display */}
           <div style={{display: 'flex', gap: '15px', marginBottom: '10px', fontSize: '12px'}}>
-            <span>Gold Rate: ₹{goldRate}/g</span>
-            <span>Silver Rate: ₹{silverRate}/g</span>
+            <div>
+              <label style={{fontSize: '10px', color: '#666'}}>Gold Rate: </label>
+              <input
+                type="number"
+                style={{...baseStyles.smallInput, width: '80px', display: 'inline-block'}}
+                value={goldRate}
+                onChange={(e) => setGoldRate(parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            <div>
+              <label style={{fontSize: '10px', color: '#666'}}>Silver Rate: </label>
+              <input
+                type="number"
+                style={{...baseStyles.smallInput, width: '80px', display: 'inline-block'}}
+                value={silverRate}
+                onChange={(e) => setSilverRate(parseFloat(e.target.value) || 0)}
+              />
+            </div>
           </div>
 
-          {/* Item Entry Row */}
+          {/* Item Entry Row - Updated to allow manual entry for Net Wt and Gross Amt */}
           <div style={baseStyles.goldSilverItemRow}>
             <div>
-              <label style={{fontSize: '10px', color: '#666'}}>Item Name</label>
+              <label style={{fontSize: '8px', color: '#666'}}>Item Name</label>
               <input
                 type="text"
                 style={baseStyles.smallInput}
                 value={currentGoldSilverItem.itemName}
-                onChange={(e) => setCurrentGoldSilverItem(prev => ({...prev, itemName: e.target.value}))}
-                placeholder="Item name"
+                onChange={(e) => updateGoldSilverItemString('itemName', e.target.value)}
+                placeholder="e.g. BANGLES 3"
               />
             </div>
             <div>
-              <label style={{fontSize: '10px', color: '#666'}}>Gross Wt</label>
+              <label style={{fontSize: '8px', color: '#666'}}>Code</label>
+              <input
+                type="text"
+                style={baseStyles.smallInput}
+                value={currentGoldSilverItem.code}
+                onChange={(e) => updateGoldSilverItemString('code', e.target.value)}
+                placeholder="Code"
+              />
+            </div>
+            <div>
+              <label style={{fontSize: '8px', color: '#666'}}>Gross Wt</label>
               <input
                 type="number"
                 style={baseStyles.smallInput}
@@ -2748,7 +3075,7 @@ const Bill = () => {
               />
             </div>
             <div>
-              <label style={{fontSize: '10px', color: '#666'}}>Stone Wt</label>
+              <label style={{fontSize: '8px', color: '#666'}}>Stone/Wax</label>
               <input
                 type="number"
                 style={baseStyles.smallInput}
@@ -2759,46 +3086,40 @@ const Bill = () => {
               />
             </div>
             <div>
-              <label style={{fontSize: '10px', color: '#666'}}>Net Wt</label>
-              <input
-                type="text"
-                style={baseStyles.readOnlyInput}
-                value={currentGoldSilverItem.netWeight.toFixed(3)}
-                readOnly
-              />
-            </div>
-            <div>
-              <label style={{fontSize: '10px', color: '#666'}}>Margin</label>
+              <label style={{fontSize: '8px', color: '#666'}}>Net Wt</label>
               <input
                 type="number"
                 style={baseStyles.smallInput}
-                value={currentGoldSilverItem.margin || ''}
-                onChange={(e) => updateGoldSilverItem('margin', e.target.value)}
-                placeholder="₹"
-                step="0.01"
+                value={currentGoldSilverItem.netWeight || ''}
+                onChange={(e) => updateGoldSilverItem('netWeight', e.target.value)}
+                placeholder="g"
+                step="0.001"
               />
             </div>
             <div>
-              <label style={{fontSize: '10px', color: '#666'}}>Gross Amt</label>
+              <label style={{fontSize: '8px', color: '#666'}}>Purity %</label>
               <input
-                type="text"
-                style={baseStyles.readOnlyInput}
-                value={currentGoldSilverItem.grossAmount.toFixed(2)}
-                readOnly
+                type="number"
+                style={baseStyles.smallInput}
+                value={currentGoldSilverItem.purity || ''}
+                onChange={(e) => updateGoldSilverItem('purity', e.target.value)}
+                placeholder="91"
+                min="0"
+                max="100"
               />
             </div>
             <div>
-              <label style={{fontSize: '10px', color: '#666'}}>Net Amt</label>
+              <label style={{fontSize: '8px', color: '#666'}}>Gross Amt</label>
               <input
                 type="text"
                 style={baseStyles.readOnlyInput}
-                value={currentGoldSilverItem.netAmount.toFixed(2)}
+                value={Math.round(currentGoldSilverItem.grossAmount).toLocaleString() || '0'}
                 readOnly
               />
             </div>
             <div>
               <button
-                style={{...baseStyles.btn, ...baseStyles.btnSuccess, padding: '4px 12px', fontSize: '12px'}}
+                style={{...baseStyles.btn, ...baseStyles.btnSuccess, padding: '4px 8px', fontSize: '10px'}}
                 onClick={addGoldSilverItem}
               >
                 Add
@@ -2808,28 +3129,28 @@ const Bill = () => {
 
           {/* Gold/Silver Items List */}
           {goldSilverItems.length > 0 && (
-            <div style={{marginTop: '10px'}}>
+            <div style={{marginTop: '10px', overflowX: 'auto'}}>
               <div style={baseStyles.goldSilverItemHeader}>
                 <span>Item</span>
+                <span>Code</span>
                 <span>Gross</span>
                 <span>Stone</span>
                 <span>Net</span>
-                <span>Margin</span>
+                <span>Purity</span>
                 <span>Gross Amt</span>
-                <span>Net Amt</span>
                 <span>Action</span>
               </div>
               {goldSilverItems.map(item => (
                 <div key={item.id} style={baseStyles.goldSilverItemRow}>
-                  <span style={{fontSize: '12px'}}>{item.itemName}</span>
-                  <span style={{fontSize: '12px'}}>{item.grossWeight}</span>
-                  <span style={{fontSize: '12px'}}>{item.stoneWeight}</span>
-                  <span style={{fontSize: '12px'}}>{item.netWeight.toFixed(3)}</span>
-                  <span style={{fontSize: '12px'}}>₹{item.margin.toFixed(2)}</span>
-                  <span style={{fontSize: '12px'}}>₹{item.grossAmount.toFixed(2)}</span>
-                  <span style={{fontSize: '12px'}}>₹{item.netAmount.toFixed(2)}</span>
+                  <span style={{fontSize: '11px'}}>{item.itemName}</span>
+                  <span style={{fontSize: '11px'}}>{item.code || '-'}</span>
+                  <span style={{fontSize: '11px'}}>{item.grossWeight.toFixed(1)}</span>
+                  <span style={{fontSize: '11px'}}>{item.stoneWeight.toFixed(1)}</span>
+                  <span style={{fontSize: '11px'}}>{item.netWeight.toFixed(1)}</span>
+                  <span style={{fontSize: '11px'}}>{item.purity}%</span>
+                  <span style={{fontSize: '11px'}}>₹{Math.round(item.grossAmount).toLocaleString()}</span>
                   <button
-                    style={{...baseStyles.btn, ...baseStyles.btnDanger, padding: '2px 6px', fontSize: '12px'}}
+                    style={{...baseStyles.btn, ...baseStyles.btnDanger, padding: '2px 6px', fontSize: '10px'}}
                     onClick={() => removeGoldSilverItem(item.id)}
                   >
                     ✕
@@ -2844,15 +3165,15 @@ const Bill = () => {
             <div style={baseStyles.goldSilverTotals}>
               <div style={baseStyles.totalRow}>
                 <span>Gross Amount Total:</span>
-                <span>₹{grossAmountTotal.toFixed(2)}</span>
+                <span>₹{Math.round(grossAmountTotal).toLocaleString()}</span>
               </div>
               <div style={baseStyles.totalRow}>
                 <span>Total Deductions:</span>
-                <span>₹{totalDeductions.toFixed(2)}</span>
+                <span>₹{Math.round(totalDeductions).toLocaleString()}</span>
               </div>
               <div style={{...baseStyles.totalRow, ...baseStyles.totalRowBold}}>
                 <span>Net Payable Amount:</span>
-                <span style={{color: '#28a745'}}>₹{netPayableAmount.toFixed(2)}</span>
+                <span style={{color: '#28a745'}}>₹{Math.round(netPayableAmount).toLocaleString()}</span>
               </div>
             </div>
           )}
@@ -3377,10 +3698,10 @@ const Bill = () => {
               style={{
                 ...baseStyles.btn,
                 ...baseStyles.btnPrimary,
-                ...(loading || (activeProducts.length === 0 && goldSilverItems.length === 0) ? baseStyles.btnDisabled : {})
+                ...(loading || !hasItemsToPrint ? baseStyles.btnDisabled : {})
               }}
               onClick={handlePrint}
-              disabled={loading || (activeProducts.length === 0 && goldSilverItems.length === 0)}
+              disabled={loading || !hasItemsToPrint}
             >
               {loading ? '⏳ Saving...' : '🖨️ Print'}
             </button>
@@ -3388,10 +3709,10 @@ const Bill = () => {
               style={{
                 ...baseStyles.btn,
                 ...baseStyles.btnSuccess,
-                ...(loading || (activeProducts.length === 0 && goldSilverItems.length === 0) ? baseStyles.btnDisabled : {})
+                ...(loading || !hasItemsToPrint ? baseStyles.btnDisabled : {})
               }}
               onClick={handlePaymentComplete}
-              disabled={loading || (activeProducts.length === 0 && goldSilverItems.length === 0)}
+              disabled={loading || !hasItemsToPrint}
             >
               {loading ? '⏳ Saving...' : '💰 Pay & Download'}
             </button>
@@ -3440,6 +3761,66 @@ const Bill = () => {
       </div>
       
       <a ref={downloadLinkRef} style={baseStyles.downloadLink}></a>
+
+      {/* Print Modal */}
+      {showPrintModal && (
+        <div style={baseStyles.printModalOverlay}>
+          <div style={baseStyles.printModalContent}>
+            <button 
+              style={baseStyles.printModalClose}
+              onClick={() => setShowPrintModal(false)}
+            >
+              ×
+            </button>
+            <div ref={printModalRef}>
+              <OmGoldenBill 
+                bill={getBillDataForPrint()} 
+                shopDetails={getShopDataForPrint()} 
+              />
+            </div>
+            <div style={{textAlign: 'center', marginTop: '10px'}}>
+              <button 
+                style={baseStyles.printModalButton}
+                onClick={() => {
+                  const printContent = printModalRef.current?.querySelector('div');
+                  if (printContent) {
+                    const win = window.open('', '_blank');
+                    if (win) {
+                      win.document.write(`
+                        <!DOCTYPE html><html><head>
+                        <title>Bill - ${billId}</title>
+                        <style>
+                          * { margin:0; padding:0; box-sizing:border-box; }
+                          body { font-family: Arial, sans-serif; font-size:11px; color:#000; background:#fff; }
+                          @page { size: A4; margin: 10mm; }
+                          @media print {
+                            body { padding: 0; margin: 0; }
+                          }
+                        </style>
+                        </head><body>${printContent.innerHTML}</body></html>
+                      `);
+                      win.document.close();
+                      win.focus();
+                      setTimeout(() => { 
+                        win.print(); 
+                        win.close(); 
+                      }, 400);
+                    }
+                  }
+                }}
+              >
+                🖨️ Print Bill
+              </button>
+              <button 
+                style={{...baseStyles.printModalButton, background: '#6c757d', marginLeft: '10px'}}
+                onClick={() => setShowPrintModal(false)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
